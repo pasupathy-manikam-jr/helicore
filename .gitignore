@@ -27,3 +27,20 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# AI / agent tooling — local only, never checked in
+/.agents
+/.ai
+/.claude
+/.codex
+/.continue
+/.cursor
+/.github/copilot-instructions.md
+/.junie
+/.windsurf
+/.mcp.json
+/AGENTS.md
+/CLAUDE.md
+/GEMINI.md
+/boost.json
+/opencode.json
