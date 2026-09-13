@@ -9,9 +9,25 @@
 
 @theme {
     --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-        'Noto Color Emoji';
+        'Archivo', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /*
+     * Material colours are not decorative here. ASME B16.20 fixes the paint
+     * colour on a spiral wound gasket's centring ring by winding metal, and
+     * these are those colours: staff already read them off the parts.
+     */
+    --color-mat-304: var(--mat-304);
+    --color-mat-316: var(--mat-316);
+    --color-mat-321: var(--mat-321);
+    --color-mat-347: var(--mat-347);
+    --color-mat-monel: var(--mat-monel);
+    --color-mat-nickel: var(--mat-nickel);
+    --color-mat-titanium: var(--mat-titanium);
+    --color-mat-inconel: var(--mat-inconel);
+    --color-mat-alloy20: var(--mat-alloy20);
+    --color-mat-317: var(--mat-317);
+    --color-mat-hastelloy: var(--mat-hastelloy);
 
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
@@ -62,74 +78,147 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
+    /* Ground is bead-blasted stainless, not paper: cool, never cream. */
+    --background: oklch(0.95 0.003 197.1);
+    --foreground: oklch(0.227 0.007 229.2);
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
+    --card-foreground: oklch(0.227 0.007 229.2);
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --destructive-foreground: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.87 0 0);
-    --chart-1: oklch(0.646 0.222 41.116);
-    --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.87 0 0);
+    --popover-foreground: oklch(0.227 0.007 229.2);
+
+    /* 316L green: their commonest winding metal, so the house colour. */
+    --primary: oklch(0.552 0.118 163.9);
+    --primary-foreground: oklch(1 0 0);
+
+    --secondary: oklch(0.908 0.006 197);
+    --secondary-foreground: oklch(0.227 0.007 229.2);
+    --muted: oklch(0.908 0.006 197);
+    --muted-foreground: oklch(0.507 0.012 212.6);
+    --accent: oklch(0.925 0.004 197.1);
+    --accent-foreground: oklch(0.227 0.007 229.2);
+
+    /* Nickel 200 red. */
+    --destructive: oklch(0.541 0.171 30);
+    --destructive-foreground: oklch(1 0 0);
+
+    --border: oklch(0.881 0.007 197);
+    --input: oklch(0.881 0.007 197);
+    --ring: oklch(0.509 0.102 169.3);
+
+    --chart-1: oklch(0.648 0.138 164.3);
+    --chart-2: oklch(0.518 0.169 259.8);
+    --chart-3: oklch(0.807 0.166 81.8);
+    --chart-4: oklch(0.696 0.181 50.5);
+    --chart-5: oklch(0.541 0.171 30);
+
+    /* Chamfer, not pill. */
+    --radius: 0.25rem;
+
+    --sidebar: oklch(1 0 0);
+    --sidebar-foreground: oklch(0.227 0.007 229.2);
+    --sidebar-primary: oklch(0.552 0.118 163.9);
+    --sidebar-primary-foreground: oklch(1 0 0);
+    --sidebar-accent: oklch(0.925 0.004 197.1);
+    --sidebar-accent-foreground: oklch(0.227 0.007 229.2);
+    --sidebar-border: oklch(0.881 0.007 197);
+    --sidebar-ring: oklch(0.552 0.118 163.9);
+
+    /* ASME B16.20 centring-ring colours. */
+    --mat-304: oklch(0.807 0.166 81.8);
+    --mat-316: oklch(0.648 0.138 164.3);
+    --mat-321: oklch(0.668 0.112 204);
+    --mat-347: oklch(0.518 0.169 259.8);
+    --mat-monel: oklch(0.696 0.181 50.5);
+    --mat-nickel: oklch(0.593 0.211 26.5);
+    --mat-titanium: oklch(0.606 0.219 292.7);
+    --mat-inconel: oklch(0.679 0.142 76.5);
+    --mat-alloy20: oklch(0.483 0.023 246);
+    --mat-317: oklch(0.498 0.184 5.3);
+    --mat-hastelloy: oklch(0.54 0.11 51.6);
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.145 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.145 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.985 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.396 0.141 25.723);
-    --destructive-foreground: oklch(0.637 0.237 25.331);
-    --border: oklch(0.269 0 0);
-    --input: oklch(0.269 0 0);
-    --ring: oklch(0.439 0 0);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.985 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(0.269 0 0);
-    --sidebar-ring: oklch(0.439 0 0);
+    --background: oklch(0.206 0.007 229.3);
+    --foreground: oklch(0.95 0.003 197.1);
+    --card: oklch(0.248 0.008 223.8);
+    --card-foreground: oklch(0.95 0.003 197.1);
+    --popover: oklch(0.248 0.008 223.8);
+    --popover-foreground: oklch(0.95 0.003 197.1);
+
+    --primary: oklch(0.662 0.114 171.5);
+    --primary-foreground: oklch(0.206 0.007 229.3);
+
+    --secondary: oklch(0.288 0.009 219.8);
+    --secondary-foreground: oklch(0.95 0.003 197.1);
+    --muted: oklch(0.288 0.009 219.8);
+    --muted-foreground: oklch(0.709 0.011 212.5);
+    --accent: oklch(0.288 0.009 219.8);
+    --accent-foreground: oklch(0.95 0.003 197.1);
+
+    --destructive: oklch(0.637 0.18 28);
+    --destructive-foreground: oklch(0.206 0.007 229.3);
+
+    --border: oklch(0.342 0.01 207.1);
+    --input: oklch(0.342 0.01 207.1);
+    --ring: oklch(0.662 0.114 171.5);
+
+    --chart-1: oklch(0.662 0.114 171.5);
+    --chart-2: oklch(0.6 0.11 244.6);
+    --chart-3: oklch(0.8 0.15 84.4);
+    --chart-4: oklch(0.7 0.16 50.7);
+    --chart-5: oklch(0.637 0.18 28);
+
+    --sidebar: oklch(0.248 0.008 223.8);
+    --sidebar-foreground: oklch(0.95 0.003 197.1);
+    --sidebar-primary: oklch(0.662 0.114 171.5);
+    --sidebar-primary-foreground: oklch(0.206 0.007 229.3);
+    --sidebar-accent: oklch(0.288 0.009 219.8);
+    --sidebar-accent-foreground: oklch(0.95 0.003 197.1);
+    --sidebar-border: oklch(0.342 0.01 207.1);
+    --sidebar-ring: oklch(0.662 0.114 171.5);
+
+    --mat-304: oklch(0.86 0.16 86);
+    --mat-316: oklch(0.74 0.14 164);
+    --mat-321: oklch(0.76 0.105 204);
+    --mat-347: oklch(0.64 0.155 259);
+    --mat-monel: oklch(0.76 0.17 52);
+    --mat-nickel: oklch(0.68 0.195 26.5);
+    --mat-titanium: oklch(0.7 0.19 292);
+    --mat-inconel: oklch(0.78 0.135 78);
+    --mat-alloy20: oklch(0.66 0.028 246);
+    --mat-317: oklch(0.63 0.175 5);
+    --mat-hastelloy: oklch(0.68 0.105 52);
+}
+
+/*
+ * The header always sits on deep 316 green. It carries the `dark` class too,
+ * so every component inside resolves against the dark token set and needs no
+ * per-component overrides.
+ */
+.theme-header {
+    --background: oklch(0.303 0.059 171.7);
+    --card: oklch(0.303 0.059 171.7);
+    --accent: oklch(0.37 0.066 171.7);
+    --accent-foreground: oklch(0.985 0.003 197.1);
+    --border: oklch(0.39 0.06 171.7);
+    --primary: oklch(0.74 0.14 164);
+    --muted-foreground: oklch(0.78 0.03 175);
+}
+
+@layer components {
+    /*
+     * Material chip. Set `--mat` to any --mat-* token; the tint, ink and rule
+     * are mixed from it so one class covers every material and both themes.
+     */
+    .mat-chip {
+        background-color: color-mix(in oklab, var(--mat) 15%, var(--card));
+        color: color-mix(in oklab, var(--mat) 72%, var(--foreground));
+        border-color: color-mix(in oklab, var(--mat) 34%, transparent);
+    }
+
+    .mat-rule {
+        background-color: var(--mat);
+    }
 }
 
 @layer base {
@@ -139,5 +228,14 @@
 
     body {
         @apply bg-background text-foreground;
+    }
+
+    /*
+     * Part codes, weights, ratings and prices sit in columns all day; lining
+     * figures of even width keep them scannable without a second typeface.
+     */
+    table,
+    .tabular {
+        font-variant-numeric: tabular-nums;
     }
 }
