@@ -29,7 +29,8 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
                             <Label htmlFor="email">Email</Label>
                             <Input
                                 id="email"
-                                type="email"
+                                type="text"
+                                inputMode="email"
                                 name="email"
                                 autoComplete="email"
                                 value={email}

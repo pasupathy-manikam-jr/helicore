@@ -28,7 +28,8 @@ export default function ForgotPassword({ status }: { status?: string }) {
                                 <Label htmlFor="email">Email address</Label>
                                 <Input
                                     id="email"
-                                    type="email"
+                                    type="text"
+                                    inputMode="email"
                                     name="email"
                                     autoComplete="off"
                                     autoFocus
