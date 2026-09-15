@@ -27,10 +27,12 @@ function wayfinderBasePath(): Plugin {
                 return null;
             }
 
-            // Runs before the literals are rewritten by the TS transform.
-            return code
-                .replaceAll('url: "/', `url: "/${prefix}/`)
-                .replaceAll("url: '/", `url: '/${prefix}/`);
+            // The hook can see the same module more than once, so the
+            // lookahead keeps an already prefixed URL from gaining a second.
+            return code.replace(
+                new RegExp(`url: (['"])/(?!${prefix}/)`, 'g'),
+                `url: $1/${prefix}/`,
+            );
         },
     };
 }
