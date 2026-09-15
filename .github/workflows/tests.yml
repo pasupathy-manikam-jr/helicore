@@ -32,7 +32,21 @@ jobs:
           node-version: '22'
 
       - name: Setup Application
-        run: composer setup
+        env:
+          # Wayfinder types a route parameter from the bound model's key
+          # column, so the build needs a schema. Without one it falls back to
+          # the model's docblock, and spatie's `int|string $id` widens the
+          # roles routes to string, which no call site satisfies.
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+        run: |
+          composer install --no-interaction --prefer-dist
+          cp .env.example .env
+          php artisan key:generate
+          touch database/database.sqlite
+          php artisan migrate --force
+          npm ci
+          npm run build
 
       - name: Run CI Checks
         run: composer ci:check
