@@ -161,11 +161,6 @@ export const navGroups: NavGroup[] = [
         ],
     },
     {
-        title: 'Reports',
-        icon: ChartColumn,
-        items: [{ title: 'Stock sold', href: stockSold() }],
-    },
-    {
         title: 'Utilities',
         icon: Settings2,
         items: [
@@ -175,5 +170,10 @@ export const navGroups: NavGroup[] = [
             { title: 'Terms & conditions', href: termsIndex() },
             { title: 'SST / GST', href: taxIndex() },
         ],
+    },
+    {
+        title: 'Reports',
+        icon: ChartColumn,
+        items: [{ title: 'Stock sold', href: stockSold() }],
     },
 ];
