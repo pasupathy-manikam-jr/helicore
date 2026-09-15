@@ -88,7 +88,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->only(['index', 'create', 'store', 'show'])
         ->parameters(['delivery-order' => 'deliveryOrder']);
 
-    Route::resource('coc', CocController::class)->only(['index', 'show']);
+    Route::resource('coc', CocController::class)
+        ->only(['index', 'create', 'store', 'show']);
 
     Route::resource('packing-list', PackingListController::class)
         ->only(['index', 'show'])

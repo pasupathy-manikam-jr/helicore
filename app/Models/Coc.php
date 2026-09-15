@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,6 +11,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * A certificate of conformity: the declaration that named lines of a sales
  * order were made to the standard the customer ordered against.
  */
+#[Fillable([
+    'fsdorder',
+    'indexno',
+    'customer_no',
+    'quality_auth',
+    'rowno',
+    'remarks',
+])]
 class Coc extends Model
 {
     protected $table = 'coc';
@@ -24,9 +33,15 @@ class Coc extends Model
         return $this->belongsTo(SalesOrder::class, 'fsdorder');
     }
 
+    /** The despatch whose lines the certificate covers. */
+    public function deliveryOrder(): BelongsTo
+    {
+        return $this->belongsTo(DeliveryOrder::class, 'indexno');
+    }
+
     /**
-     * The certificate covers named sales order lines, held as a comma
-     * separated list of their ids.
+     * The certificate covers named despatch lines, held as a comma separated
+     * list of their ids.
      *
      * @return array<int, int>
      */
@@ -38,16 +53,16 @@ class Coc extends Model
         )));
     }
 
-    /** @return Collection<int, SalesOrderLine> */
+    /** @return Collection<int, DeliveryOrderLine> */
     public function lines(): Collection
     {
         $ids = $this->lineIds();
 
         if ($ids === []) {
-            return SalesOrderLine::query()->whereRaw('1 = 0')->get();
+            return DeliveryOrderLine::query()->whereRaw('1 = 0')->get();
         }
 
-        return SalesOrderLine::query()
+        return DeliveryOrderLine::query()
             ->whereIn('id', $ids)
             ->orderBy('item')
             ->get();

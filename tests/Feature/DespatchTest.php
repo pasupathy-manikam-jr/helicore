@@ -241,23 +241,28 @@ class DespatchTest extends TestCase
         $this->assertFalse(DeliveryOrder::findOrFail($doId)->isComplete());
     }
 
-    public function test_a_certificate_resolves_the_sales_order_lines_it_names()
+    public function test_a_certificate_resolves_the_despatch_lines_it_names()
     {
         $this->actingAsDespatchUser('coc-list');
 
         $orderId = DB::table('sales_orders')->insertGetId([]);
-        $first = DB::table('sales_order_line_item')->insertGetId([
-            'fsdorder' => $orderId, 'item' => 1, 'stock_code' => 'RTJ-1', 'quantity' => 2,
+        $doId = DB::table('loading_note')->insertGetId([
+            'type' => 'salesorder', 'salesorder' => $orderId, 'status' => 'valid',
         ]);
-        $second = DB::table('sales_order_line_item')->insertGetId([
-            'fsdorder' => $orderId, 'item' => 2, 'stock_code' => 'RTJ-2', 'quantity' => 1,
+
+        $first = DB::table('loading_note_content')->insertGetId([
+            'do_id' => $doId, 'item' => 1, 'stockcode' => 'RTJ-1', 'quantity' => 2, 'actual_qty' => 2,
         ]);
-        DB::table('sales_order_line_item')->insert([
-            'fsdorder' => $orderId, 'item' => 3, 'stock_code' => 'NOT-CERTIFIED',
+        $second = DB::table('loading_note_content')->insertGetId([
+            'do_id' => $doId, 'item' => 2, 'stockcode' => 'RTJ-2', 'quantity' => 1, 'actual_qty' => 1,
+        ]);
+        DB::table('loading_note_content')->insert([
+            'do_id' => $doId, 'item' => 3, 'stockcode' => 'NOT-CERTIFIED',
         ]);
 
         $cocId = DB::table('coc')->insertGetId([
             'fsdorder' => $orderId,
+            'indexno' => $doId,
             'rowno' => "{$first},{$second}",
             'quality_auth' => 'Dana',
         ]);
@@ -268,7 +273,7 @@ class DespatchTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->count('lines', 2)
-                ->where('lines.0.stock_code', 'RTJ-1')
+                ->where('lines.0.stockcode', 'RTJ-1')
             );
     }
 
@@ -282,6 +287,81 @@ class DespatchTest extends TestCase
         $this->get(route('coc.show', $cocId))
             ->assertOk()
             ->assertInertia(fn ($page) => $page->count('lines', 0));
+    }
+
+    public function test_the_certificate_form_lists_that_month_s_despatches()
+    {
+        $this->actingAsDespatchUser('coc-create');
+
+        $clientId = DB::table('company_details')->insertGetId(['cname' => 'Acme Energy']);
+        $orderId = DB::table('sales_orders')->insertGetId(['customer_no' => $clientId]);
+        $doId = DB::table('loading_note')->insertGetId([
+            'type' => 'salesorder', 'salesorder' => $orderId, 'status' => 'valid',
+            'created_at' => '2022-05-06 00:00:00',
+        ]);
+        DB::table('loading_note_content')->insert([
+            'do_id' => $doId, 'item' => 1, 'stockcode' => 'RTJ-1', 'quantity' => 2, 'actual_qty' => 2,
+        ]);
+
+        $this->get(route('coc.create', ['month' => '2022-05']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('deliveryOrders.0.id', $doId));
+
+        $this->get(route('coc.create', ['month' => '2022-05', 'delivery_order' => $doId]))
+            ->assertInertia(fn ($page) => $page
+                ->where('deliveryOrder.client', 'Acme Energy')
+                ->where('lines.0.stockcode', 'RTJ-1')
+            );
+    }
+
+    public function test_a_certificate_records_the_ticked_despatch_lines()
+    {
+        $this->actingAsDespatchUser('coc-create', 'coc-list');
+
+        $clientId = DB::table('company_details')->insertGetId(['cname' => 'Acme Energy']);
+        $orderId = DB::table('sales_orders')->insertGetId(['customer_no' => $clientId]);
+        $doId = DB::table('loading_note')->insertGetId([
+            'type' => 'salesorder', 'salesorder' => $orderId, 'status' => 'valid',
+        ]);
+        $first = DB::table('loading_note_content')->insertGetId([
+            'do_id' => $doId, 'item' => 1, 'stockcode' => 'RTJ-1', 'actual_qty' => 2,
+        ]);
+        $second = DB::table('loading_note_content')->insertGetId([
+            'do_id' => $doId, 'item' => 2, 'stockcode' => 'RTJ-2', 'actual_qty' => 1,
+        ]);
+
+        $this->post(route('coc.store'), [
+            'delivery_order' => $doId,
+            'quality_auth' => 'Dana',
+            'remarks' => 'Checked against ASME B16.20',
+            'lines' => [$first, $second],
+        ])->assertRedirect();
+
+        $coc = Coc::latest('id')->first();
+
+        $this->assertSame($doId, $coc->indexno);
+        $this->assertSame($orderId, $coc->fsdorder);
+        $this->assertSame($clientId, $coc->customer_no);
+        $this->assertSame([$first, $second], $coc->lineIds());
+    }
+
+    public function test_a_certificate_cannot_name_another_despatch_s_lines()
+    {
+        $this->actingAsDespatchUser('coc-create');
+
+        $mine = DB::table('loading_note')->insertGetId(['type' => 'salesorder']);
+        $theirs = DB::table('loading_note')->insertGetId(['type' => 'salesorder']);
+        $theirLine = DB::table('loading_note_content')->insertGetId([
+            'do_id' => $theirs, 'item' => 1, 'stockcode' => 'OTHER',
+        ]);
+
+        $this->post(route('coc.store'), [
+            'delivery_order' => $mine,
+            'quality_auth' => 'Dana',
+            'lines' => [$theirLine],
+        ])->assertRedirect();
+
+        $this->assertDatabaseCount('coc', 0);
     }
 
     public function test_a_packing_list_covers_several_sales_orders()

@@ -9,18 +9,18 @@ import {
     useAppTable,
 } from '@/lib/data-table';
 import { formatDate } from '@/lib/format';
-import { index, show } from '@/routes/coc';
-import { Eye } from 'lucide-react';
+import { create, index, show } from '@/routes/coc';
+import { Eye, Plus } from 'lucide-react';
 import type { CocRow } from './types';
 
 type Props = {
     cocs: CocRow[];
-    can: { edit: boolean };
+    can: { edit: boolean; create: boolean };
 };
 
 const helper = createAppColumnHelper<CocRow>();
 
-export default function CocsIndex({ cocs }: Props) {
+export default function CocsIndex({ cocs, can }: Props) {
     const columns = useMemo(
         () =>
             helper.columns([
@@ -90,6 +90,15 @@ export default function CocsIndex({ cocs }: Props) {
                     table={table}
                     searchPlaceholder="Search COC no., client, sales order…"
                     emptyMessage="No certificates found."
+                    toolbar={
+                        can.create && (
+                            <Button asChild>
+                                <Link href={create()}>
+                                    <Plus /> New COC
+                                </Link>
+                            </Button>
+                        )
+                    }
                 />
             </div>
         </>

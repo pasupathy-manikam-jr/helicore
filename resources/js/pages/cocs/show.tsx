@@ -82,10 +82,11 @@ export default function CocShow({ coc, lines }: Props) {
                                 <TableHead>Stock code</TableHead>
                                 <TableHead>Description</TableHead>
                                 <TableHead className="text-right">
-                                    Qty
+                                    Ordered
                                 </TableHead>
-                                <TableHead>Batch</TableHead>
-                                <TableHead>Certification</TableHead>
+                                <TableHead className="text-right">
+                                    Delivered
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
 
@@ -96,7 +97,7 @@ export default function CocShow({ coc, lines }: Props) {
                                         colSpan={6}
                                         className="text-muted-foreground py-8 text-center"
                                     >
-                                        This certificate names no sales order
+                                        This certificate names no despatch
                                         lines, or the lines it names are gone.
                                     </TableCell>
                                 </TableRow>
@@ -106,7 +107,7 @@ export default function CocShow({ coc, lines }: Props) {
                                 <TableRow key={line.id}>
                                     <TableCell>{line.item}</TableCell>
                                     <TableCell className="font-medium">
-                                        {line.stock_code}
+                                        {line.stockcode}
                                         <div className="text-muted-foreground text-xs">
                                             {line.product}
                                         </div>
@@ -115,11 +116,10 @@ export default function CocShow({ coc, lines }: Props) {
                                         {line.description}
                                     </TableCell>
                                     <TableCell className="text-right tabular-nums">
-                                        {line.quantity} {line.unit}
+                                        {line.quantity}
                                     </TableCell>
-                                    <TableCell>{line.batch}</TableCell>
-                                    <TableCell>
-                                        {line.type_of_certification}
+                                    <TableCell className="text-right tabular-nums">
+                                        {line.actual_qty}
                                     </TableCell>
                                 </TableRow>
                             ))}
