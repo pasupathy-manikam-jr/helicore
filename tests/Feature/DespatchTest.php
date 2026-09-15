@@ -593,4 +593,53 @@ class DespatchTest extends TestCase
             'lines' => [$first],
         ])->assertForbidden();
     }
+
+    public function test_a_packing_list_packs_every_line_of_a_despatch()
+    {
+        $this->actingAsDespatchUser('pl-create', 'pl-list');
+
+        $clientId = DB::table('company_details')->insertGetId(['cname' => 'Acme Energy']);
+        $orderId = DB::table('sales_orders')->insertGetId(['customer_no' => $clientId]);
+        $doId = DB::table('loading_note')->insertGetId([
+            'type' => 'salesorder', 'salesorder' => $orderId, 'status' => 'valid',
+        ]);
+        DB::table('loading_note_content')->insert([
+            ['do_id' => $doId, 'item' => 1, 'stockcode' => 'RTJ-1', 'actual_qty' => 2, 'weight' => 1.5],
+            ['do_id' => $doId, 'item' => 2, 'stockcode' => 'RTJ-2', 'actual_qty' => 1, 'weight' => 3],
+        ]);
+
+        $this->post(route('packing-list.store'), [
+            'delivery_order' => $doId,
+            'ref' => 'PL-7',
+        ])->assertRedirect();
+
+        $list = PackingList::latest('id')->first();
+
+        $this->assertSame('PL-7', $list->ref);
+        // The customer name defaults to the client on the sales order.
+        $this->assertSame('Acme Energy', $list->altcustomername);
+        $this->assertSame([$orderId], $list->salesOrderIds());
+        $this->assertCount(2, $list->lines);
+        $this->assertSame($doId, $list->lines->first()->do_id);
+        $this->assertEqualsWithDelta(1.5, $list->lines->first()->unit_weight, 0.001);
+    }
+
+    public function test_a_despatch_with_no_lines_cannot_be_packed()
+    {
+        $this->actingAsDespatchUser('pl-create');
+
+        $doId = DB::table('loading_note')->insertGetId(['type' => 'salesorder']);
+
+        $this->post(route('packing-list.store'), ['delivery_order' => $doId])
+            ->assertRedirect();
+
+        $this->assertDatabaseCount('packinglist', 0);
+    }
+
+    public function test_packing_needs_the_create_permission()
+    {
+        $this->actingAsDespatchUser('pl-list');
+
+        $this->get(route('packing-list.create'))->assertForbidden();
+    }
 }

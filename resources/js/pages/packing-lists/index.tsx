@@ -9,18 +9,18 @@ import {
     useAppTable,
 } from '@/lib/data-table';
 import { formatDate } from '@/lib/format';
-import { index, show } from '@/routes/packing-list';
-import { Eye } from 'lucide-react';
+import { create, index, show } from '@/routes/packing-list';
+import { Eye, Plus } from 'lucide-react';
 import type { PackingListRow } from './types';
 
 type Props = {
     lists: PackingListRow[];
-    can: { edit: boolean };
+    can: { edit: boolean; create: boolean };
 };
 
 const helper = createAppColumnHelper<PackingListRow>();
 
-export default function PackingListsIndex({ lists }: Props) {
+export default function PackingListsIndex({ lists, can }: Props) {
     const columns = useMemo(
         () =>
             helper.columns([
@@ -90,6 +90,15 @@ export default function PackingListsIndex({ lists }: Props) {
                     table={table}
                     searchPlaceholder="Search PL no., customer, reference…"
                     emptyMessage="No packing lists found."
+                    toolbar={
+                        can.create && (
+                            <Button asChild>
+                                <Link href={create()}>
+                                    <Plus /> New packing list
+                                </Link>
+                            </Button>
+                        )
+                    }
                 />
             </div>
         </>

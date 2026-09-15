@@ -33,3 +33,30 @@ export type PackingListTotals = {
     weight: number;
     value: number;
 };
+
+export type DeliveryOrderOption = {
+    id: number;
+    type: string | null;
+    salesorder: number | null;
+    customer_order: string | null;
+};
+
+export type DeliveryOrderForPacking = {
+    id: number;
+    type: string | null;
+    salesorder: number | null;
+    customer_order: string | null;
+    created_at: string | null;
+    client: string | null;
+};
+
+export type PackableLine = {
+    id: number;
+    item: number | null;
+    product: string | null;
+    stockcode: string | null;
+    description: string | null;
+    quantity: number | null;
+    actual_qty: number | null;
+    weight: number | null;
+};

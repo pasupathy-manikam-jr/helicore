@@ -92,7 +92,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->only(['index', 'create', 'store', 'show']);
 
     Route::resource('packing-list', PackingListController::class)
-        ->only(['index', 'show'])
+        ->only(['index', 'create', 'store', 'show'])
         ->parameters(['packing-list' => 'packingList']);
 
     Route::resource('afe', AfeController::class)
