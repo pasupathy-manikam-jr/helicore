@@ -48,3 +48,42 @@ export type Proforma = {
     currency: string | null;
     customer_order: string | null;
 };
+
+export type SalesOrderOption = {
+    id: number;
+    customer_order: string | null;
+    client: string | null;
+};
+
+export type SalesOrderForProforma = {
+    id: number;
+    customer_order: string | null;
+    pay_terms: string | null;
+    miscellaneous: string | null;
+    created_at: string | null;
+    client: string | null;
+    currency: string | null;
+    sst: boolean;
+};
+
+export type QuotableLine = {
+    id: number;
+    item: number | null;
+    product: string | null;
+    stock_code: string | null;
+    description: string | null;
+    quantity: number | null;
+    unit: string | null;
+    unit_price: string | null;
+    line_total: number;
+};
+
+export type SalesOrderTotals = {
+    subtotal: number;
+    freight: number;
+    packing: number;
+    customs: number;
+    misc: number;
+    discount: number;
+    grand_total: number;
+};

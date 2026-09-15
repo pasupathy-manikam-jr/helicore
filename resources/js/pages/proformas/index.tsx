@@ -9,18 +9,18 @@ import {
     useAppTable,
 } from '@/lib/data-table';
 import { formatDate, money } from '@/lib/format';
-import { index, show } from '@/routes/proforma';
-import { Eye } from 'lucide-react';
+import { create, index, show } from '@/routes/proforma';
+import { Eye, Plus } from 'lucide-react';
 import type { ProformaRow } from './types';
 
 type Props = {
     proformas: ProformaRow[];
-    can: { edit: boolean };
+    can: { edit: boolean; create: boolean };
 };
 
 const helper = createAppColumnHelper<ProformaRow>();
 
-export default function ProformasIndex({ proformas }: Props) {
+export default function ProformasIndex({ proformas, can }: Props) {
     const columns = useMemo(
         () =>
             helper.columns([
@@ -95,6 +95,15 @@ export default function ProformasIndex({ proformas }: Props) {
                     table={table}
                     searchPlaceholder="Search proforma no., client, sales order…"
                     emptyMessage="No proformas found."
+                    toolbar={
+                        can.create && (
+                            <Button asChild>
+                                <Link href={create()}>
+                                    <Plus /> New proforma
+                                </Link>
+                            </Button>
+                        )
+                    }
                 />
             </div>
         </>

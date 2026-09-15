@@ -83,7 +83,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('invoice', InvoiceController::class)
         ->only(['index', 'create', 'store', 'show']);
 
-    Route::resource('proforma', ProformaController::class)->only(['index', 'show']);
+    Route::resource('proforma', ProformaController::class)
+        ->only(['index', 'create', 'store', 'show']);
 
     Route::resource('delivery-order', DeliveryOrderController::class)
         ->only(['index', 'create', 'store', 'show'])

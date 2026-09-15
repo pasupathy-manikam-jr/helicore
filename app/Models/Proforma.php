@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,6 +11,21 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * A proforma is quoted against a sales order before anything ships, so its
  * lines are the ordered ones rather than the despatched ones.
  */
+#[Fillable([
+    'fsdno',
+    'indexno',
+    'subtotal',
+    'totalmyr',
+    'discount',
+    'paymentdue',
+    'transportation',
+    'tax',
+    'custom',
+    'packing_charge',
+    'misc',
+    'misc_title',
+    'sst',
+])]
 class Proforma extends Model
 {
     protected $table = 'proforma';

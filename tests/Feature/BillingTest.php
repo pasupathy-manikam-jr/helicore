@@ -94,6 +94,13 @@ class BillingTest extends TestCase
             $table->string('customer_order', 100)->nullable();
             $table->string('pay_terms', 100)->nullable();
             $table->integer('sst')->nullable();
+            $table->date('closing_date')->nullable();
+            $table->decimal('freightcharge', 10, 2)->nullable();
+            $table->decimal('packcost', 10, 2)->nullable();
+            $table->decimal('custom', 10, 2)->nullable();
+            $table->decimal('miscvalue', 10, 2)->nullable();
+            $table->string('miscellaneous', 100)->nullable();
+            $table->decimal('discount', 10, 2)->nullable();
             $table->timestamps();
         });
 
@@ -437,5 +444,77 @@ class BillingTest extends TestCase
         $this->actingAsBillingUser('invoice-list');
 
         $this->get(route('invoice.create'))->assertForbidden();
+    }
+
+    public function test_the_proforma_picker_offers_only_open_sales_orders()
+    {
+        $this->actingAsBillingUser('invoice-create');
+
+        $clientId = DB::table('company_details')->insertGetId(['cname' => 'Acme Energy']);
+        $open = DB::table('sales_orders')->insertGetId([
+            'customer_no' => $clientId, 'created_at' => '2022-05-06 00:00:00',
+        ]);
+        DB::table('sales_orders')->insert([
+            'customer_no' => $clientId, 'created_at' => '2022-05-07 00:00:00',
+            'closing_date' => '2022-06-01',
+        ]);
+
+        $this->get(route('proforma.create', ['month' => '2022-05']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->count('salesOrders', 1)
+                ->where('salesOrders.0.id', $open)
+            );
+    }
+
+    public function test_a_proforma_takes_its_charges_from_the_sales_order()
+    {
+        $this->actingAsBillingUser('invoice-create', 'invoice-list');
+
+        $clientId = DB::table('company_details')->insertGetId(['cname' => 'Acme Energy']);
+        $currencyId = DB::table('currency')->insertGetId(['name' => 'USD', 'myrrate' => 4]);
+        $orderId = DB::table('sales_orders')->insertGetId([
+            'customer_no' => $clientId,
+            'currency' => $currencyId,
+            'pay_terms' => '30 days',
+            'freightcharge' => 100,
+            'packcost' => 50,
+            'custom' => 25,
+            'miscvalue' => 25,
+            'miscellaneous' => 'Crating',
+            'discount' => 200,
+            'sst' => 0,
+        ]);
+        DB::table('sales_order_line_item')->insert([
+            ['fsdorder' => $orderId, 'item' => 1, 'quantity' => 2, 'unit_price' => 500, 'sst' => 0],
+        ]);
+
+        $this->post(route('proforma.store'), ['sales_order' => $orderId])
+            ->assertRedirect();
+
+        $proforma = Proforma::latest('id')->first();
+
+        $this->assertEqualsWithDelta(1000, $proforma->subtotal, 0.001);
+        $this->assertEqualsWithDelta(100, $proforma->transportation, 0.001);
+        $this->assertEqualsWithDelta(50, $proforma->packing_charge, 0.001);
+        $this->assertEqualsWithDelta(25, $proforma->custom, 0.001);
+        $this->assertEqualsWithDelta(25, $proforma->misc, 0.001);
+        $this->assertEqualsWithDelta(200, $proforma->discount, 0.001);
+        $this->assertSame('Crating', $proforma->misc_title);
+        $this->assertSame('30 days', $proforma->paymentdue);
+        // 1000 + 100 + 50 + 25 + 25 - 200, converted at the order's rate.
+        $this->assertEqualsWithDelta(4000, $proforma->totalmyr, 0.001);
+    }
+
+    public function test_a_sales_order_with_no_lines_cannot_be_quoted()
+    {
+        $this->actingAsBillingUser('invoice-create');
+
+        $orderId = DB::table('sales_orders')->insertGetId([]);
+
+        $this->post(route('proforma.store'), ['sales_order' => $orderId])
+            ->assertRedirect();
+
+        $this->assertDatabaseCount('proforma', 0);
     }
 }
