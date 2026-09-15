@@ -28,8 +28,9 @@ class PackingListController extends Controller implements HasMiddleware
     {
         $lineCounts = DB::table('packinglist_content')
             ->groupBy('packingid')
-            ->selectRaw('packingid, count(*) as lines')
-            ->pluck('lines', 'packingid');
+            // `lines` is reserved in MySQL, hence the alias.
+            ->selectRaw('packingid, count(*) as total')
+            ->pluck('total', 'packingid');
 
         $lists = PackingList::query()
             ->orderByDesc('id')

@@ -54,8 +54,8 @@ class ReceivingNoteController extends Controller implements HasMiddleware
         // per-row subquery cheap.
         $lineCounts = DB::table('receive_note_descs')
             ->groupBy('receivenote_id')
-            ->selectRaw('receivenote_id, count(*) as lines')
-            ->pluck('lines', 'receivenote_id');
+            ->selectRaw('receivenote_id, count(*) as total')
+            ->pluck('total', 'receivenote_id');
 
         $notes->each(fn ($note) => $note->lines_count = (int) ($lineCounts[$note->id] ?? 0));
 
