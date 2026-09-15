@@ -96,7 +96,18 @@ export default function SalesOrderShow({ order, lines, totals, can }: Props) {
 
                         {can.despatch && (
                             <Button variant="outline" asChild>
-                                <Link href={despatchCreate(order.id)}>
+                                <Link
+                                    href={despatchCreate({
+                                        query: {
+                                            type: 'salesorder',
+                                            month: order.created_at?.slice(
+                                                0,
+                                                7,
+                                            ),
+                                            order: order.id,
+                                        },
+                                    })}
+                                >
                                     <Truck /> Despatch
                                 </Link>
                             </Button>

@@ -6,17 +6,32 @@ use App\Http\Requests\DeliveryOrderRequest;
 use App\Models\DeliveryOrder;
 use App\Models\DeliveryOrderLine;
 use App\Models\SalesOrder;
-use App\Models\SalesOrderLine;
+use App\Models\StockOrderTransfer;
+use App\Models\WorkOrder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DeliveryOrderController extends Controller implements HasMiddleware
 {
+    /**
+     * What a despatch can be raised against, keyed by the value the legacy
+     * loading_note.type column holds.
+     *
+     * @var array<string, array{model: class-string<Model>, label: string}>
+     */
+    private const SOURCES = [
+        'salesorder' => ['model' => SalesOrder::class, 'label' => 'Sales order'],
+        'workorder' => ['model' => WorkOrder::class, 'label' => 'Work order'],
+        'stockordertransfer' => ['model' => StockOrderTransfer::class, 'label' => 'Stock order transfer'],
+    ];
+
     /**
      * @return array<int, Middleware|string>
      */
@@ -63,66 +78,108 @@ class DeliveryOrderController extends Controller implements HasMiddleware
     }
 
     /**
-     * A despatch is raised against a sales order, so the form starts from that
-     * order's lines and what earlier despatches already sent out.
+     * Picking what to despatch, in the order the legacy screen asks for it:
+     * a month, then one of that month's orders, then its lines. Sales orders,
+     * work orders and stock order transfers each get their own pair.
      */
-    public function create(SalesOrder $salesOrder): Response
+    public function create(Request $request): Response
     {
-        $salesOrder->load(['lines', 'client:id,cname']);
+        $filters = $request->validate([
+            'type' => ['nullable', Rule::in(array_keys(self::SOURCES))],
+            'month' => ['nullable', 'date_format:Y-m'],
+            'order' => ['nullable', 'integer'],
+        ]);
+
+        $type = $filters['type'] ?? 'salesorder';
+        $month = $filters['month'] ?? null;
+        $model = self::SOURCES[$type]['model'];
+
+        $orders = $month === null ? collect() : $model::query()
+            ->with('client:id,cname')
+            ->whereYear('created_at', substr($month, 0, 4))
+            ->whereMonth('created_at', substr($month, 5, 2))
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (Model $order) => [
+                'id' => $order->id,
+                'customer_order' => $order->customer_order,
+                'client' => $order->client?->cname,
+            ]);
+
+        $order = isset($filters['order'])
+            ? $model::with(['lines', 'client'])->find($filters['order'])
+            : null;
 
         return Inertia::render('delivery-orders/form', [
-            'order' => [
-                ...$salesOrder->only(['id', 'customer_order', 'contact_person']),
-                'client' => $salesOrder->client?->cname,
+            'sources' => collect(self::SOURCES)
+                ->map(fn (array $source, string $key) => ['value' => $key, 'label' => $source['label']])
+                ->values(),
+            'type' => $type,
+            'month' => $month,
+            'orders' => $orders,
+            'order' => $order === null ? null : [
+                ...$order->only([
+                    'id', 'customer_order', 'contact_person', 'mode_of_shipment',
+                    'remarks', 'created_at',
+                ]),
+                'client' => $order->client?->only([
+                    'cname', 'address', 'state', 'country', 'phone', 'fax',
+                ]),
             ],
-            'lines' => $salesOrder->lines->map(fn (SalesOrderLine $line) => [
-                ...$line->only(['id', 'item', 'product', 'stock_code', 'description', 'quantity', 'unit']),
-                'already_sent' => $this->alreadySent($salesOrder)[$line->item] ?? 0,
-            ]),
+            'lines' => $order === null ? [] : $this->despatchableLines($type, $order),
         ]);
     }
 
     public function store(DeliveryOrderRequest $request): RedirectResponse
     {
-        $quantities = $request->despatchedQuantities();
+        $type = $request->validated('type');
+        $model = self::SOURCES[$type]['model'];
+        $order = $model::with('lines')->findOrFail($request->validated('order'));
 
-        if ($quantities === []) {
+        $outstanding = collect($this->despatchableLines($type, $order))->keyBy('id');
+
+        // Only lines with something left to send, so a stale tick on a line
+        // another despatch has since cleared cannot send it twice.
+        $sending = collect($request->validated('lines'))
+            ->map(fn (int $id) => $outstanding->get($id))
+            ->filter(fn (?array $line) => ($line['outstanding'] ?? 0) > 0);
+
+        if ($sending->isEmpty()) {
             Inertia::flash('toast', [
                 'type' => 'error',
-                'message' => 'Enter a quantity against at least one line.',
+                'message' => 'Every line ticked has already been delivered.',
             ]);
 
             return back();
         }
 
-        $salesOrder = SalesOrder::with('lines')->findOrFail($request->validated('salesorder'));
-        $lines = $salesOrder->lines->whereIn('id', array_keys($quantities));
-
-        $deliveryOrder = DB::transaction(function () use ($request, $salesOrder, $lines, $quantities) {
+        $deliveryOrder = DB::transaction(function () use ($request, $type, $order, $sending) {
             $deliveryOrder = DeliveryOrder::create([
-                'type' => 'salesorder',
-                'salesorder' => $salesOrder->id,
-                'customer_order' => $request->validated('customer_order') ?? $salesOrder->customer_order,
+                'type' => $type,
+                'salesorder' => $order->id,
+                'customer_order' => $request->validated('customer_order') ?? $order->customer_order,
                 // Both counts are of lines, as the legacy screen records them.
-                'total_fsd_items' => $salesOrder->lines->count(),
-                'delivered_fsd_items' => $lines->count(),
+                'total_fsd_items' => $order->lines->count(),
+                'delivered_fsd_items' => $sending->count(),
                 'status' => 'valid',
             ]);
 
-            foreach ($lines as $line) {
+            foreach ($sending as $line) {
+                $source = $order->lines->firstWhere('id', $line['id']);
+
                 $deliveryOrder->lines()->create([
-                    'item' => $line->item,
-                    'poitem' => $line->polineitem,
-                    'quantity' => $quantities[$line->id],
-                    'actual_qty' => $quantities[$line->id],
-                    'product' => $line->product,
-                    'description' => $line->description,
-                    'postock_code' => $line->postock_code,
-                    'stockcode' => $line->stock_code,
-                    'std_stockcode' => $line->std_stockcode,
-                    'unit_price' => $line->unit_price,
-                    'weight' => $line->weight,
-                    'sst' => $line->sst ?? 0,
+                    'item' => $source->item,
+                    'poitem' => $source->polineitem,
+                    'quantity' => $line['outstanding'],
+                    'actual_qty' => $line['outstanding'],
+                    'product' => $source->product,
+                    'description' => $source->description,
+                    'postock_code' => $source->postock_code,
+                    'stockcode' => $source->stock_code,
+                    'std_stockcode' => $source->std_stockcode,
+                    'unit_price' => $source->unit_price,
+                    'weight' => $source->weight,
+                    'sst' => $source->sst ?? 0,
                 ]);
             }
 
@@ -135,24 +192,43 @@ class DeliveryOrderController extends Controller implements HasMiddleware
     }
 
     /**
-     * How much of each sales order line earlier despatches already sent, by
-     * item number: that is what a despatch line records, not the line id.
+     * Each line of the order with the despatches that already covered it: the
+     * note numbers, how much they sent, and what is left.
      *
-     * @return array<int, int>
+     * @return array<int, array<string, mixed>>
      */
-    private function alreadySent(SalesOrder $salesOrder): array
+    private function despatchableLines(string $type, Model $order): array
     {
-        return DB::table('loading_note_content')
+        $sent = DB::table('loading_note_content')
             ->join('loading_note', 'loading_note.id', '=', 'loading_note_content.do_id')
-            ->where('loading_note.type', 'salesorder')
-            ->where('loading_note.salesorder', $salesOrder->id)
+            ->where('loading_note.type', $type)
+            ->where('loading_note.salesorder', $order->id)
             ->where(fn ($query) => $query->where('loading_note.status', '!=', 'invalid')
                 ->orWhereNull('loading_note.status'))
-            ->groupBy('loading_note_content.item')
-            ->selectRaw('loading_note_content.item as item, sum(loading_note_content.actual_qty) as sent')
-            ->get()
-            ->mapWithKeys(fn ($row) => [(int) $row->item => (int) $row->sent])
-            ->all();
+            ->get([
+                'loading_note_content.item',
+                'loading_note_content.do_id',
+                'loading_note_content.actual_qty',
+            ])
+            ->groupBy('item');
+
+        return $order->lines->map(function (Model $line) use ($sent) {
+            $despatches = $sent->get($line->item, collect());
+            $alreadySent = (int) $despatches->sum('actual_qty');
+
+            return [
+                'id' => $line->id,
+                'item' => $line->item,
+                'product' => $line->product,
+                'stock_code' => $line->stock_code,
+                'description' => $line->description,
+                'quantity' => (int) $line->quantity,
+                'unit' => $line->unit,
+                'delivery_orders' => $despatches->pluck('do_id')->map(fn ($id) => (int) $id)->unique()->values()->all(),
+                'already_sent' => $alreadySent,
+                'outstanding' => max((int) $line->quantity - $alreadySent, 0),
+            ];
+        })->all();
     }
 
     public function show(DeliveryOrder $deliveryOrder): Response

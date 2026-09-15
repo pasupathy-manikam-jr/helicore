@@ -49,11 +49,32 @@ export type DeliveryOrderTotals = {
     value: number;
 };
 
-export type SalesOrderForDespatch = {
+export type SourceOption = {
+    value: string;
+    label: string;
+};
+
+export type SourceOrderOption = {
+    id: number;
+    customer_order: string | null;
+    client: string | null;
+};
+
+export type SourceOrder = {
     id: number;
     customer_order: string | null;
     contact_person: string | null;
-    client: string | null;
+    mode_of_shipment: string | null;
+    remarks: string | null;
+    created_at: string | null;
+    client: {
+        cname: string | null;
+        address: string | null;
+        state: string | null;
+        country: string | null;
+        phone: string | null;
+        fax: string | null;
+    } | null;
 };
 
 export type DespatchableLine = {
@@ -62,8 +83,10 @@ export type DespatchableLine = {
     product: string | null;
     stock_code: string | null;
     description: string | null;
-    quantity: number | null;
+    quantity: number;
     unit: string | null;
-    /** How much of this line earlier despatches already sent. */
+    /** Notes that already covered this line. */
+    delivery_orders: number[];
     already_sent: number;
+    outstanding: number;
 };

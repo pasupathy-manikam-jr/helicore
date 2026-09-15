@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class DeliveryOrderRequest extends FormRequest
 {
@@ -12,24 +13,13 @@ class DeliveryOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'salesorder' => ['required', 'integer', 'exists:sales_orders,id'],
+            'type' => ['required', Rule::in(['salesorder', 'workorder', 'stockordertransfer'])],
+            'order' => ['required', 'integer'],
             'customer_order' => ['nullable', 'string', 'max:50'],
-            // Keyed by sales order line id. A blank line is not despatched.
-            'quantities' => ['required', 'array', 'min:1'],
-            'quantities.*' => ['nullable', 'integer', 'min:0'],
+            // The ticked lines. What goes out is whatever is still outstanding
+            // on each, worked out on the server.
+            'lines' => ['required', 'array', 'min:1'],
+            'lines.*' => ['integer'],
         ];
-    }
-
-    /**
-     * The sales order lines that actually had a quantity entered.
-     *
-     * @return array<int, int>
-     */
-    public function despatchedQuantities(): array
-    {
-        return collect($this->validated('quantities'))
-            ->map(fn ($quantity) => (int) $quantity)
-            ->filter(fn (int $quantity) => $quantity > 0)
-            ->all();
     }
 }

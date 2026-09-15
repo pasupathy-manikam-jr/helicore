@@ -114,6 +114,41 @@ class DespatchTest extends TestCase
         Schema::create('company_details', function (Blueprint $table) {
             $table->increments('id');
             $table->string('cname')->nullable();
+            $table->string('address', 500)->nullable();
+            $table->string('state')->nullable();
+            $table->string('country')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('fax')->nullable();
+        });
+
+        Schema::create('stock_orders', function (Blueprint $table) {
+            $table->increments('id');
+            $table->integer('customer_no')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('stockorder_lineitem', function (Blueprint $table) {
+            $table->increments('id');
+            $table->integer('orderno')->nullable();
+            $table->integer('item')->nullable();
+            $table->integer('quantity')->nullable();
+            $table->string('stock_code', 100)->nullable();
+            $table->float('unit_price')->nullable();
+        });
+
+        Schema::create('stock_order_transfers', function (Blueprint $table) {
+            $table->increments('id');
+            $table->integer('customer_no')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('stock_order_transfer_lineitems', function (Blueprint $table) {
+            $table->increments('id');
+            $table->integer('orderno')->nullable();
+            $table->integer('item')->nullable();
+            $table->integer('quantity')->nullable();
+            $table->string('stock_code', 100)->nullable();
+            $table->float('unit_price')->nullable();
         });
     }
 
@@ -305,6 +340,7 @@ class DespatchTest extends TestCase
         $orderId = DB::table('sales_orders')->insertGetId([
             'customer_no' => $clientId,
             'customer_order' => 'PO-5',
+            'created_at' => '2022-05-06 00:00:00',
         ]);
 
         $first = DB::table('sales_order_line_item')->insertGetId([
@@ -319,13 +355,31 @@ class DespatchTest extends TestCase
         return [$orderId, [$first, $second]];
     }
 
-    public function test_the_despatch_form_shows_what_is_still_outstanding()
+    public function test_the_picker_lists_that_month_s_orders()
+    {
+        $this->actingAsDespatchUser('do-create');
+
+        [$orderId] = $this->salesOrderWithLines();
+
+        $this->get(route('delivery-order.create', ['type' => 'salesorder', 'month' => '2022-05']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('orders.0.id', $orderId)
+                ->where('orders.0.client', 'Acme Energy')
+                ->count('lines', 0)
+            );
+
+        // A month with nothing raised in it offers no orders.
+        $this->get(route('delivery-order.create', ['type' => 'salesorder', 'month' => '2021-01']))
+            ->assertInertia(fn ($page) => $page->count('orders', 0));
+    }
+
+    public function test_the_lines_show_the_earlier_notes_and_what_is_left()
     {
         $this->actingAsDespatchUser('do-create');
 
         [$orderId, [$first]] = $this->salesOrderWithLines();
 
-        // An earlier despatch already sent four of item 1.
         $doId = DB::table('loading_note')->insertGetId([
             'type' => 'salesorder', 'salesorder' => $orderId, 'status' => 'valid',
         ]);
@@ -333,17 +387,21 @@ class DespatchTest extends TestCase
             'do_id' => $doId, 'item' => 1, 'quantity' => 4, 'actual_qty' => 4,
         ]);
 
-        $this->get(route('delivery-order.create', $orderId))
+        $this->get(route('delivery-order.create', [
+            'type' => 'salesorder', 'month' => '2022-05', 'order' => $orderId,
+        ]))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
+                ->where('order.client.cname', 'Acme Energy')
                 ->where('lines.0.id', $first)
-                ->where('lines.0.quantity', 10)
                 ->where('lines.0.already_sent', 4)
-                ->where('lines.1.already_sent', 0)
+                ->where('lines.0.outstanding', 6)
+                ->where('lines.0.delivery_orders', [$doId])
+                ->where('lines.1.outstanding', 4)
             );
     }
 
-    public function test_an_invalid_despatch_is_left_out_of_what_was_sent()
+    public function test_a_despatch_marked_invalid_does_not_count_as_sent()
     {
         $this->actingAsDespatchUser('do-create');
 
@@ -356,51 +414,90 @@ class DespatchTest extends TestCase
             'do_id' => $doId, 'item' => 1, 'quantity' => 4, 'actual_qty' => 4,
         ]);
 
-        $this->get(route('delivery-order.create', $orderId))
-            ->assertInertia(fn ($page) => $page->where('lines.0.already_sent', 0));
+        $this->get(route('delivery-order.create', [
+            'type' => 'salesorder', 'month' => '2022-05', 'order' => $orderId,
+        ]))->assertInertia(fn ($page) => $page->where('lines.0.already_sent', 0));
     }
 
-    public function test_a_despatch_copies_the_sales_order_line_onto_the_note()
+    public function test_a_ticked_line_despatches_what_is_outstanding()
     {
         $this->actingAsDespatchUser('do-create', 'do-list');
 
-        [$orderId, [$first, $second]] = $this->salesOrderWithLines();
+        [$orderId, [$first]] = $this->salesOrderWithLines();
+
+        // Four already gone, so this note should carry the remaining six.
+        $doId = DB::table('loading_note')->insertGetId([
+            'type' => 'salesorder', 'salesorder' => $orderId, 'status' => 'valid',
+        ]);
+        DB::table('loading_note_content')->insert([
+            'do_id' => $doId, 'item' => 1, 'quantity' => 4, 'actual_qty' => 4,
+        ]);
 
         $this->post(route('delivery-order.store'), [
-            'salesorder' => $orderId,
+            'type' => 'salesorder',
+            'order' => $orderId,
             'customer_order' => 'PO-5',
-            'quantities' => [$first => 6, $second => 0],
+            'lines' => [$first],
         ])->assertRedirect();
 
         $note = DeliveryOrder::latest('id')->first();
-
-        $this->assertSame('salesorder', $note->type);
-        $this->assertSame($orderId, $note->salesorder);
-        // Both counts are of lines: two on the order, one on this despatch.
-        $this->assertSame(2, (int) $note->total_fsd_items);
-        $this->assertSame(1, (int) $note->delivered_fsd_items);
-
         $line = $note->lines->first();
 
-        $this->assertSame('SPW-1', $line->stockcode);
+        $this->assertSame('salesorder', $note->type);
+        $this->assertSame(2, (int) $note->total_fsd_items);
+        $this->assertSame(1, (int) $note->delivered_fsd_items);
         $this->assertSame(6, $line->quantity);
         $this->assertSame(6, $line->actual_qty);
+        $this->assertSame('SPW-1', $line->stockcode);
         $this->assertEqualsWithDelta(25, $line->unit_price, 0.001);
-        $this->assertEqualsWithDelta(3, $line->sst, 0.001);
     }
 
-    public function test_a_despatch_with_no_quantities_is_refused()
+    public function test_a_line_already_delivered_in_full_is_refused()
     {
         $this->actingAsDespatchUser('do-create');
 
         [$orderId, [$first]] = $this->salesOrderWithLines();
 
+        $doId = DB::table('loading_note')->insertGetId([
+            'type' => 'salesorder', 'salesorder' => $orderId, 'status' => 'valid',
+        ]);
+        DB::table('loading_note_content')->insert([
+            'do_id' => $doId, 'item' => 1, 'quantity' => 10, 'actual_qty' => 10,
+        ]);
+
         $this->post(route('delivery-order.store'), [
-            'salesorder' => $orderId,
-            'quantities' => [$first => 0],
+            'type' => 'salesorder',
+            'order' => $orderId,
+            'lines' => [$first],
         ])->assertRedirect();
 
-        $this->assertDatabaseCount('loading_note', 0);
+        // Only the earlier note exists; nothing was sent twice.
+        $this->assertDatabaseCount('loading_note', 1);
+    }
+
+    public function test_a_despatch_can_be_raised_against_a_work_order()
+    {
+        $this->actingAsDespatchUser('do-create', 'do-list');
+
+        $clientId = DB::table('company_details')->insertGetId(['cname' => 'Acme Energy']);
+        $woId = DB::table('stock_orders')->insertGetId([
+            'customer_no' => $clientId, 'created_at' => '2022-05-06 00:00:00',
+        ]);
+        $lineId = DB::table('stockorder_lineitem')->insertGetId([
+            'orderno' => $woId, 'item' => 1, 'quantity' => 3, 'stock_code' => 'WO-1',
+        ]);
+
+        $this->post(route('delivery-order.store'), [
+            'type' => 'workorder',
+            'order' => $woId,
+            'lines' => [$lineId],
+        ])->assertRedirect();
+
+        $note = DeliveryOrder::latest('id')->first();
+
+        $this->assertSame('workorder', $note->type);
+        $this->assertSame($woId, $note->salesorder);
+        $this->assertSame(3, $note->lines->first()->quantity);
     }
 
     public function test_despatching_needs_the_create_permission()
@@ -409,10 +506,11 @@ class DespatchTest extends TestCase
 
         [$orderId, [$first]] = $this->salesOrderWithLines();
 
-        $this->get(route('delivery-order.create', $orderId))->assertForbidden();
+        $this->get(route('delivery-order.create'))->assertForbidden();
         $this->post(route('delivery-order.store'), [
-            'salesorder' => $orderId,
-            'quantities' => [$first => 1],
+            'type' => 'salesorder',
+            'order' => $orderId,
+            'lines' => [$first],
         ])->assertForbidden();
     }
 }

@@ -9,9 +9,8 @@ import {
     useAppTable,
 } from '@/lib/data-table';
 import { formatDate } from '@/lib/format';
-import { index, show } from '@/routes/delivery-order';
+import { create, index, show } from '@/routes/delivery-order';
 import { Eye, Plus } from 'lucide-react';
-import PickSalesOrderDialog from './pick-sales-order-dialog';
 import type { DeliveryOrderRow } from './types';
 
 type Props = {
@@ -130,13 +129,11 @@ export default function DeliveryOrdersIndex({ orders, can }: Props) {
                     emptyMessage="No delivery orders found."
                     toolbar={
                         can.create && (
-                            <PickSalesOrderDialog
-                                trigger={
-                                    <Button>
-                                        <Plus /> New delivery order
-                                    </Button>
-                                }
-                            />
+                            <Button asChild>
+                                <Link href={create()}>
+                                    <Plus /> New delivery order
+                                </Link>
+                            </Button>
                         )
                     }
                 />
