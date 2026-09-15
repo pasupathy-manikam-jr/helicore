@@ -26,14 +26,18 @@ class PackingListController extends Controller implements HasMiddleware
 
     public function index(Request $request): Response
     {
+        $lineCounts = DB::table('packinglist_content')
+            ->groupBy('packingid')
+            ->selectRaw('packingid, count(*) as lines')
+            ->pluck('lines', 'packingid');
+
         $lists = PackingList::query()
-            ->withCount('lines')
             ->orderByDesc('id')
             ->get()
             ->map(fn (PackingList $list) => [
                 ...$list->only(['id', 'ref', 'altcustomername', 'created_at']),
                 'sales_orders' => $list->salesOrderIds(),
-                'line_count' => $list->lines_count,
+                'line_count' => (int) ($lineCounts[$list->id] ?? 0),
             ]);
 
         return Inertia::render('packing-lists/index', [

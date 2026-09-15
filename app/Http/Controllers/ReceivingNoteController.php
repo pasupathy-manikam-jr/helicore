@@ -47,10 +47,17 @@ class ReceivingNoteController extends Controller implements HasMiddleware
                 'receivenote.created_at',
                 'supplier.supplier_name as supplier',
             ])
-            // After the select, so the count is added rather than replaced.
-            ->withCount('lines')
             ->orderByDesc('receivenote.id')
             ->get();
+
+        // Counted in one pass: the legacy child tables have no index to make a
+        // per-row subquery cheap.
+        $lineCounts = DB::table('receive_note_descs')
+            ->groupBy('receivenote_id')
+            ->selectRaw('receivenote_id, count(*) as lines')
+            ->pluck('lines', 'receivenote_id');
+
+        $notes->each(fn ($note) => $note->lines_count = (int) ($lineCounts[$note->id] ?? 0));
 
         return Inertia::render('receiving-notes/index', [
             'notes' => $notes,

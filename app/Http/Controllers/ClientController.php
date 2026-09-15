@@ -38,8 +38,12 @@ class ClientController extends Controller implements HasMiddleware
 
         $names = User::query()->pluck('name', 'id');
 
+        $addressCounts = DB::table('delivery_address')
+            ->groupBy('company_detail_id')
+            ->selectRaw('company_detail_id, count(*) as addresses')
+            ->pluck('addresses', 'company_detail_id');
+
         $clients = Client::query()
-            ->withCount('deliveryAddresses')
             ->orderBy('cname')
             ->get()
             ->map(fn (Client $client) => [
@@ -48,7 +52,7 @@ class ClientController extends Controller implements HasMiddleware
                     'country', 'phone', 'fax', 'attn', 'client_email', 'user_email',
                     'cstatus', 'payment_terms', 'status',
                 ]),
-                'delivery_addresses_count' => $client->delivery_addresses_count,
+                'delivery_addresses_count' => (int) ($addressCounts[$client->id] ?? 0),
                 // Older rows hold a username in user_email rather than an id,
                 // so fall back to whatever the column holds.
                 'salesperson' => $names[$client->user_email] ?? $client->user_email,
