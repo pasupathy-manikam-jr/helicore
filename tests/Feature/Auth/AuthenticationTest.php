@@ -71,7 +71,9 @@ class AuthenticationTest extends TestCase
 
         $response = $this->actingAs($user)->post(route('logout'));
 
-        $response->assertRedirect(route('home'));
+        // Straight to the login page rather than through the home redirect,
+        // which costs two more hops and loses the Inertia headers.
+        $response->assertRedirect(route('login'));
 
         $this->assertGuest();
     }
