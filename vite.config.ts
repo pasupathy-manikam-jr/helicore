@@ -5,7 +5,35 @@ import tailwindcss from '@tailwindcss/vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
-import { defineConfig, lazyPlugins } from 'vite-plus';
+import { defineConfig, lazyPlugins, type Plugin } from 'vite-plus';
+
+/**
+ * Serves the app from a subfolder. Wayfinder bakes root relative URLs into the
+ * generated route helpers, so when the app does not sit at the domain root
+ * those URLs need the folder in front of them. Set APP_PATH_PREFIX at build
+ * time (APP_PATH_PREFIX=helicore npm run build); unset, this does nothing.
+ */
+function wayfinderBasePath(): Plugin {
+    const prefix = (process.env.APP_PATH_PREFIX ?? '').replace(/^\/|\/$/g, '');
+
+    return {
+        name: 'helicore:wayfinder-base-path',
+        enforce: 'pre',
+        transform(code, id) {
+            if (
+                prefix === '' ||
+                !/resources[\\/]js[\\/](actions|routes)[\\/]/.test(id)
+            ) {
+                return null;
+            }
+
+            // Runs before the literals are rewritten by the TS transform.
+            return code
+                .replaceAll('url: "/', `url: "/${prefix}/`)
+                .replaceAll("url: '/", `url: '/${prefix}/`);
+        },
+    };
+}
 
 export default defineConfig({
     plugins: lazyPlugins(() => [
@@ -27,6 +55,7 @@ export default defineConfig({
         wayfinder({
             formVariants: true,
         }),
+        wayfinderBasePath(),
     ]),
     server: {
         watch: {
