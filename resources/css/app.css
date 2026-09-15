@@ -196,13 +196,14 @@
  * per-component overrides.
  */
 .theme-header {
-    --background: oklch(0.303 0.059 171.7);
-    --card: oklch(0.303 0.059 171.7);
-    --accent: oklch(0.37 0.066 171.7);
+    /* Dark green, on the hue of the gasket mark in the logo. */
+    --background: oklch(0.29 0.083 162);
+    --card: oklch(0.29 0.083 162);
+    --accent: oklch(0.36 0.088 162);
     --accent-foreground: oklch(0.985 0.003 197.1);
-    --border: oklch(0.39 0.06 171.7);
-    --primary: oklch(0.74 0.14 164);
-    --muted-foreground: oklch(0.78 0.03 175);
+    --border: oklch(0.38 0.075 162);
+    --primary: oklch(0.76 0.15 162);
+    --muted-foreground: oklch(0.8 0.035 165);
 }
 
 @layer components {
