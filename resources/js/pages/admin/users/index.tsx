@@ -6,7 +6,7 @@ import ConfirmDelete from '@/components/confirm-delete';
 import { DataTable } from '@/components/data-table';
 import Heading from '@/components/heading';
 import { MatChip } from '@/components/mat-chip';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useInitials } from '@/hooks/use-initials';
 import {
@@ -43,10 +43,6 @@ export default function UsersIndex({
                     cell: ({ row }) => (
                         <div className="flex items-center gap-3">
                             <Avatar className="size-8">
-                                <AvatarImage
-                                    src={row.original.avatar ?? undefined}
-                                    alt={row.original.name}
-                                />
                                 <AvatarFallback className="text-xs">
                                     {getInitials(row.original.name)}
                                 </AvatarFallback>
