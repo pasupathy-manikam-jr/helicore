@@ -286,7 +286,9 @@ export function DataTable<TData extends RowData>({
                             <SelectTrigger className="w-20" size="sm">
                                 <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            {/* Always opens upwards: this select lives at the
+                                foot of the listing, so below is off screen. */}
+                            <SelectContent side="top" align="start">
                                 {PAGE_SIZES.map((size) => (
                                     <SelectItem key={size} value={String(size)}>
                                         {size}
