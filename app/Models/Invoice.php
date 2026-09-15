@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,6 +11,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * An invoice is raised against one despatch: fsdno names the sales order it
  * belongs to, indexno the delivery order whose lines it bills for.
  */
+#[Fillable([
+    'acct_invoiceno',
+    'fsdno',
+    'indexno',
+    'subtotal',
+    'totalmyr',
+    'discount',
+    'paymentterms',
+    'transportation',
+    'tax',
+    'custom',
+    'packing_charge',
+    'misc',
+    'misc_title',
+    'sst',
+])]
 class Invoice extends Model
 {
     protected $table = 'invoice';

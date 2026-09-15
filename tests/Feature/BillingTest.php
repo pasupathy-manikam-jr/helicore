@@ -66,6 +66,10 @@ class BillingTest extends TestCase
             $table->increments('id');
             $table->string('type')->nullable();
             $table->integer('salesorder')->nullable();
+            $table->string('customer_order', 50)->nullable();
+            $table->integer('total_fsd_items')->nullable();
+            $table->integer('delivered_fsd_items')->nullable();
+            $table->string('status', 9)->nullable();
             $table->timestamps();
         });
 
@@ -88,6 +92,8 @@ class BillingTest extends TestCase
             $table->integer('customer_no')->nullable();
             $table->integer('currency')->nullable();
             $table->string('customer_order', 100)->nullable();
+            $table->string('pay_terms', 100)->nullable();
+            $table->integer('sst')->nullable();
             $table->timestamps();
         });
 
@@ -165,6 +171,7 @@ class BillingTest extends TestCase
         Schema::create('currency', function (Blueprint $table) {
             $table->increments('id');
             $table->string('name')->nullable();
+            $table->decimal('myrrate', 10, 4)->nullable();
         });
     }
 
@@ -335,5 +342,100 @@ class BillingTest extends TestCase
                 // 500 + 100 - 50
                 ->where('totals.grand_total', 550)
             );
+    }
+
+    public function test_an_invoice_bills_the_chosen_despatch()
+    {
+        $this->actingAsBillingUser('invoice-create', 'invoice-list');
+
+        $clientId = DB::table('company_details')->insertGetId(['cname' => 'Acme Energy']);
+        $currencyId = DB::table('currency')->insertGetId(['name' => 'USD', 'myrrate' => 4]);
+        $orderId = DB::table('sales_orders')->insertGetId([
+            'customer_no' => $clientId, 'currency' => $currencyId,
+            'pay_terms' => '30 days', 'sst' => 0,
+        ]);
+        $doId = DB::table('loading_note')->insertGetId([
+            'type' => 'salesorder', 'salesorder' => $orderId, 'status' => 'valid',
+        ]);
+        DB::table('loading_note_content')->insert([
+            ['do_id' => $doId, 'item' => 1, 'actual_qty' => 4, 'unit_price' => 25, 'sst' => 0],
+            ['do_id' => $doId, 'item' => 2, 'actual_qty' => 1, 'unit_price' => 100, 'sst' => 0],
+        ]);
+
+        $this->post(route('invoice.store'), [
+            'delivery_order' => $doId,
+            'transportation' => 50,
+            'packing_charge' => 20,
+            'discount' => 10,
+        ])->assertRedirect();
+
+        $invoice = Invoice::latest('id')->first();
+
+        // 4 x 25 plus 1 x 100, worked out from the despatch rather than the
+        // misspelt field the legacy screen read.
+        $this->assertEqualsWithDelta(200, $invoice->subtotal, 0.001);
+        $this->assertEqualsWithDelta(800, $invoice->totalmyr, 0.001);
+        $this->assertSame($orderId, $invoice->fsdno);
+        $this->assertSame((string) $doId, $invoice->indexno);
+        $this->assertSame('30 days', $invoice->paymentterms);
+        // 200 + 50 + 20 - 10
+        $this->assertEqualsWithDelta(260, $invoice->totals()['grand_total'], 0.001);
+
+        // The despatch is marked billed.
+        $this->assertSame('invoiced', DB::table('loading_note')->find($doId)->status);
+    }
+
+    public function test_the_accounts_number_carries_on_from_the_last_invoice()
+    {
+        $this->actingAsBillingUser('invoice-create');
+
+        DB::table('invoice')->insert(['acct_invoiceno' => 9196, 'fsdno' => 1]);
+
+        $doId = DB::table('loading_note')->insertGetId(['type' => 'salesorder']);
+        DB::table('loading_note_content')->insert([
+            'do_id' => $doId, 'item' => 1, 'actual_qty' => 1, 'unit_price' => 10,
+        ]);
+
+        $this->post(route('invoice.store'), ['delivery_order' => $doId])->assertRedirect();
+
+        $this->assertSame(9197, Invoice::latest('id')->first()->acct_invoiceno);
+    }
+
+    public function test_a_despatch_with_nothing_on_it_cannot_be_billed()
+    {
+        $this->actingAsBillingUser('invoice-create');
+
+        $doId = DB::table('loading_note')->insertGetId(['type' => 'salesorder']);
+
+        $this->post(route('invoice.store'), ['delivery_order' => $doId])->assertRedirect();
+
+        $this->assertDatabaseCount('invoice', 0);
+    }
+
+    public function test_the_form_warns_when_the_despatch_is_already_invoiced()
+    {
+        $this->actingAsBillingUser('invoice-create');
+
+        $doId = DB::table('loading_note')->insertGetId([
+            'type' => 'salesorder', 'created_at' => '2022-05-06 00:00:00',
+        ]);
+        DB::table('loading_note_content')->insert([
+            'do_id' => $doId, 'item' => 1, 'actual_qty' => 1, 'unit_price' => 10,
+        ]);
+        DB::table('invoice')->insert(['indexno' => (string) $doId, 'fsdno' => 1]);
+
+        $this->get(route('invoice.create', ['month' => '2022-05', 'delivery_order' => $doId]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('deliveryOrder.already_invoiced', true)
+                ->where('subtotal', 10)
+            );
+    }
+
+    public function test_invoicing_needs_the_create_permission()
+    {
+        $this->actingAsBillingUser('invoice-list');
+
+        $this->get(route('invoice.create'))->assertForbidden();
     }
 }

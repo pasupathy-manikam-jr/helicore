@@ -51,3 +51,37 @@ export type Invoice = {
     currency: string | null;
     customer_order: string | null;
 };
+
+export type DeliveryOrderOption = {
+    id: number;
+    type: string | null;
+    salesorder: number | null;
+    customer_order: string | null;
+    status: string | null;
+};
+
+export type DeliveryOrderForInvoice = {
+    id: number;
+    type: string | null;
+    salesorder: number | null;
+    customer_order: string | null;
+    status: string | null;
+    created_at: string | null;
+    client: string | null;
+    currency: string | null;
+    pay_terms: string | null;
+    sst: boolean;
+    already_invoiced: boolean;
+};
+
+export type BillableLine = {
+    id: number;
+    item: number | null;
+    product: string | null;
+    stockcode: string | null;
+    description: string | null;
+    actual_qty: number | null;
+    unit_price: string | null;
+    sst: string | null;
+    line_total: number;
+};

@@ -9,18 +9,18 @@ import {
     useAppTable,
 } from '@/lib/data-table';
 import { formatDate, money } from '@/lib/format';
-import { index, show } from '@/routes/invoice';
-import { Eye } from 'lucide-react';
+import { create, index, show } from '@/routes/invoice';
+import { Eye, Plus } from 'lucide-react';
 import type { InvoiceRow } from './types';
 
 type Props = {
     invoices: InvoiceRow[];
-    can: { edit: boolean };
+    can: { edit: boolean; create: boolean };
 };
 
 const helper = createAppColumnHelper<InvoiceRow>();
 
-export default function InvoicesIndex({ invoices }: Props) {
+export default function InvoicesIndex({ invoices, can }: Props) {
     const columns = useMemo(
         () =>
             helper.columns([
@@ -103,6 +103,15 @@ export default function InvoicesIndex({ invoices }: Props) {
                     table={table}
                     searchPlaceholder="Search invoice no., client, sales order…"
                     emptyMessage="No invoices found."
+                    toolbar={
+                        can.create && (
+                            <Button asChild>
+                                <Link href={create()}>
+                                    <Plus /> New invoice
+                                </Link>
+                            </Button>
+                        )
+                    }
                 />
             </div>
         </>

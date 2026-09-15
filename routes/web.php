@@ -80,7 +80,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->only(['index', 'show'])
         ->parameters(['stock-transfer' => 'stockTransfer']);
 
-    Route::resource('invoice', InvoiceController::class)->only(['index', 'show']);
+    Route::resource('invoice', InvoiceController::class)
+        ->only(['index', 'create', 'store', 'show']);
 
     Route::resource('proforma', ProformaController::class)->only(['index', 'show']);
 
