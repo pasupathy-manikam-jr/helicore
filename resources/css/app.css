@@ -196,14 +196,21 @@
  * per-component overrides.
  */
 .theme-header {
-    /* Dark green, on the hue of the gasket mark in the logo. */
-    --background: oklch(0.38 0.11 162);
-    --card: oklch(0.38 0.11 162);
-    --accent: oklch(0.45 0.115 162);
-    --accent-foreground: oklch(0.985 0.003 197.1);
-    --border: oklch(0.47 0.1 162);
-    --primary: oklch(0.76 0.15 162);
-    --muted-foreground: oklch(0.8 0.035 165);
+    /*
+     * Dark green, on the hue of the gasket mark in the logo. These set the
+     * --color-* variables the utilities read: the theme block is not inline,
+     * so redefining --background here would never reach bg-background.
+     */
+    --color-background: oklch(0.38 0.11 162);
+    --color-card: oklch(0.38 0.11 162);
+    --color-foreground: oklch(0.985 0.003 197.1);
+    --color-card-foreground: oklch(0.985 0.003 197.1);
+    --color-accent: oklch(0.45 0.115 162);
+    --color-accent-foreground: oklch(0.985 0.003 197.1);
+    --color-border: oklch(0.47 0.1 162);
+    --color-primary: oklch(0.87 0.16 162);
+    --color-primary-foreground: oklch(0.24 0.06 162);
+    --color-muted-foreground: oklch(0.87 0.04 165);
 }
 
 @layer components {
