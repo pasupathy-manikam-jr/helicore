@@ -197,11 +197,11 @@
  */
 .theme-header {
     /* Dark green, on the hue of the gasket mark in the logo. */
-    --background: oklch(0.29 0.083 162);
-    --card: oklch(0.29 0.083 162);
-    --accent: oklch(0.36 0.088 162);
+    --background: oklch(0.38 0.11 162);
+    --card: oklch(0.38 0.11 162);
+    --accent: oklch(0.45 0.115 162);
     --accent-foreground: oklch(0.985 0.003 197.1);
-    --border: oklch(0.38 0.075 162);
+    --border: oklch(0.47 0.1 162);
     --primary: oklch(0.76 0.15 162);
     --muted-foreground: oklch(0.8 0.035 165);
 }
