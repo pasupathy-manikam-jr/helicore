@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Quotation;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -34,10 +36,33 @@ class DashboardController extends Controller
             'stats' => $stats,
             'pendingAfes' => DB::table('afe')->where('approvalstatus', '!=', 'Yes')->count(),
             'supplierCount' => DB::table('supplier')->count(),
-            'recentQuotations' => DB::table('quote_refs')
-                ->latest('created_at')
-                ->limit(8)
-                ->get(['id', 'your_ref', 'attnto', 'client_buyer_name', 'created_at']),
+            'recentQuotations' => $this->recentQuotations(),
         ]);
+    }
+
+    /**
+     * The newest quotations, identified the way the rest of the app does:
+     * quote number and client first, with what the quotation comes to. Ordered
+     * by id, which is monotonic, rather than by a date column the legacy app
+     * did not always fill in.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function recentQuotations(): Collection
+    {
+        return Quotation::query()
+            ->with(['lines', 'client:id,cname', 'currencyRef:id,name'])
+            ->latest('id')
+            ->limit(8)
+            ->get()
+            ->map(fn (Quotation $quotation) => [
+                'id' => $quotation->id,
+                'client' => $quotation->client?->cname,
+                'your_ref' => $quotation->your_ref,
+                'attnto' => $quotation->attnto,
+                'currency' => $quotation->currencyRef?->name,
+                'value' => $quotation->totals()['grand_total'],
+                'created_at' => $quotation->created_at?->toDateTimeString(),
+            ]);
     }
 }

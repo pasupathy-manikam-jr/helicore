@@ -1,0 +1,150 @@
+export type SalesOrderRow = {
+    id: number;
+    client: string | null;
+    contact_person: string | null;
+    customer_order: string | null;
+    salesperson: string | null;
+    closing_date: string | null;
+    invoice: string | null;
+    workorder: number | null;
+    sst: number | null;
+    created_at: string | null;
+};
+
+export type SalesOrderLine = {
+    id: number;
+    item: number | null;
+    product: string | null;
+    stock_code: string | null;
+    std_stockcode: string | null;
+    description: string | null;
+    unit: string | null;
+    quantity: number | null;
+    weight: number | null;
+    unit_price: string | null;
+    sst: string | null;
+    postock_code: string | null;
+    polineitem: string | null;
+    linedate: string | null;
+    batch: string | null;
+    type_of_certification: string | null;
+    operator: string | null;
+    wo: number | null;
+    fgmr: number | null;
+    po: number | null;
+    line_total: number;
+    line_weight: number;
+};
+
+export type SalesOrderTotals = {
+    quantity: number;
+    weight: number;
+    sst: number;
+    subtotal: number;
+    freight: number;
+    packing: number;
+    customs: number;
+    misc: number;
+    discount: number;
+    grand_total: number;
+};
+
+export type SalesOrder = {
+    id: number;
+    contact_person: string | null;
+    customer_order: string | null;
+    receiving_note: string | null;
+    customer_reqdate: string | null;
+    required_datetime: string | null;
+    goods_ready_date: string | null;
+    despatch_date: string | null;
+    closing_date: string | null;
+    packorder_date: string | null;
+    mode_of_shipment: string | null;
+    freight: string | null;
+    packaging_type: string | null;
+    sp_instruct1: string | null;
+    sp_instruct2: string | null;
+    sp_instruct3: string | null;
+    invoice: string | null;
+    workorder: number | null;
+    afe: string | null;
+    remarks: string | null;
+    certification: string | null;
+    quote_basis: string | null;
+    delivery: string | null;
+    bid_validity: string | null;
+    pay_terms: string | null;
+    email: string | null;
+    miscellaneous: string | null;
+    sst: number | null;
+    is_cod: number | null;
+    created_at: string | null;
+    client: {
+        id: number;
+        cname: string | null;
+        address: string | null;
+        city: string | null;
+        state: string | null;
+        country: string | null;
+    } | null;
+    delivery_address: {
+        id: number;
+        customer_name: string | null;
+        address: string | null;
+        city: string | null;
+        state: string | null;
+        country: string | null;
+    } | null;
+    currency: string | null;
+    salesperson: string | null;
+    reviewer: string | null;
+    processor: string | null;
+    /** Only the order confirmation sends this, as the document's issuer. */
+    issuer?: string | null;
+};
+
+export type ReferenceOption = {
+    id: number;
+    name: string | null;
+};
+
+export type SalesOrderFormValues = {
+    id: number;
+    customer_no: number | null;
+    delivery_address: number | null;
+    contact_person: string | null;
+    email: string | null;
+    customer_order: string | null;
+    receiving_note: string | null;
+    sales_person: number | null;
+    contract_reviewed_by: number | null;
+    order_process_by: number | null;
+    currency: number | null;
+    mode_of_shipment: string | null;
+    packaging_type: string | null;
+    certification: string | null;
+    sst: number | null;
+    is_cod: number | null;
+    customer_reqdate: string | null;
+    required_datetime: string | null;
+    goods_ready_date: string | null;
+    despatch_date: string | null;
+    packorder_date: string | null;
+    closing_date: string | null;
+    quote_basis: string | null;
+    delivery: string | null;
+    bid_validity: string | null;
+    pay_terms: string | null;
+    afe: string | null;
+    freightcharge: string | null;
+    packcost: string | null;
+    custom: string | null;
+    miscellaneous: string | null;
+    miscvalue: string | null;
+    discount: string | null;
+    sp_instruct1: string | null;
+    sp_instruct2: string | null;
+    sp_instruct3: string | null;
+    remarks: string | null;
+};

@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table';
 import { MATERIAL_TOKENS } from '@/lib/materials';
 import { dashboard } from '@/routes';
+import { show as quotationShow } from '@/routes/quotation';
 import { index as supplierIndex } from '@/routes/supplier';
 
 type Stat = {
@@ -22,9 +23,11 @@ type Stat = {
 
 type Quotation = {
     id: number;
+    client: string | null;
     your_ref: string | null;
     attnto: string | null;
-    client_buyer_name: string | null;
+    currency: string | null;
+    value: number;
     created_at: string | null;
 };
 
@@ -36,6 +39,11 @@ type Props = {
 };
 
 const number = new Intl.NumberFormat();
+
+const money = new Intl.NumberFormat(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+});
 
 function formatDate(value: string | null) {
     if (!value) {
@@ -157,9 +165,12 @@ export default function Dashboard({
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Ref</TableHead>
-                                <TableHead>Attention to</TableHead>
-                                <TableHead>Buyer</TableHead>
+                                <TableHead>Quote no.</TableHead>
+                                <TableHead>Client</TableHead>
+                                <TableHead>Your ref.</TableHead>
+                                <TableHead className="text-right">
+                                    Value
+                                </TableHead>
                                 <TableHead className="text-right">
                                     Raised
                                 </TableHead>
@@ -170,7 +181,7 @@ export default function Dashboard({
                             {recentQuotations.length === 0 && (
                                 <TableRow>
                                     <TableCell
-                                        colSpan={4}
+                                        colSpan={5}
                                         className="text-muted-foreground py-8 text-center"
                                     >
                                         No quotations yet.
@@ -181,13 +192,27 @@ export default function Dashboard({
                             {recentQuotations.map((quotation) => (
                                 <TableRow key={quotation.id}>
                                     <TableCell className="font-medium">
-                                        {quotation.your_ref ?? quotation.id}
+                                        <Link
+                                            href={quotationShow(quotation.id)}
+                                            className="hover:underline"
+                                        >
+                                            {quotation.id}
+                                        </Link>
                                     </TableCell>
                                     <TableCell>
-                                        {quotation.attnto ?? '—'}
+                                        {quotation.client ?? '—'}
+                                        <div className="text-muted-foreground text-xs">
+                                            {quotation.attnto}
+                                        </div>
                                     </TableCell>
                                     <TableCell>
-                                        {quotation.client_buyer_name ?? '—'}
+                                        {quotation.your_ref ?? '—'}
+                                    </TableCell>
+                                    <TableCell className="text-right whitespace-nowrap tabular-nums">
+                                        {money.format(quotation.value)}
+                                        <span className="text-muted-foreground ml-1 text-xs">
+                                            {quotation.currency}
+                                        </span>
                                     </TableCell>
                                     <TableCell className="text-right whitespace-nowrap">
                                         {formatDate(quotation.created_at)}

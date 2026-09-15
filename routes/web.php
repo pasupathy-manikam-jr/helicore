@@ -2,20 +2,33 @@
 
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\AfeApprovalFlowController;
+use App\Http\Controllers\AfeController;
+use App\Http\Controllers\AfeLineController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\CocController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeliveryAddressController;
+use App\Http\Controllers\DeliveryOrderController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\PackingListController;
+use App\Http\Controllers\ProformaController;
 use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\QuotationLineController;
+use App\Http\Controllers\ReceivingNoteController;
 use App\Http\Controllers\Reference\CurrencyController;
 use App\Http\Controllers\Reference\ModeOfShipmentController;
 use App\Http\Controllers\Reference\PermissionController;
 use App\Http\Controllers\Reference\TariffController;
 use App\Http\Controllers\Reference\TaxController;
 use App\Http\Controllers\Reference\TncController;
+use App\Http\Controllers\SalesOrderController;
+use App\Http\Controllers\SalesOrderLineController;
 use App\Http\Controllers\StockCodeController;
+use App\Http\Controllers\StockOrderTransferController;
 use App\Http\Controllers\SupplierCategoryController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\WorkOrderController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard')->name('home');
@@ -44,6 +57,60 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('stock-code.index');
     Route::put('stock-code/{product}/{id}', [StockCodeController::class, 'update'])
         ->name('stock-code.update');
+
+    Route::resource('sales-order', SalesOrderController::class)
+        ->only(['index', 'create', 'store', 'show', 'edit', 'update'])
+        ->parameters(['sales-order' => 'salesOrder']);
+
+    Route::get('sales-order/{salesOrder}/confirmation', [SalesOrderController::class, 'confirmation'])
+        ->name('sales-order.confirmation');
+
+    Route::resource('sales-order.line', SalesOrderLineController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->parameters(['sales-order' => 'salesOrder']);
+    Route::post('sales-order/{salesOrder}/copy-quotation', [SalesOrderLineController::class, 'copy'])
+        ->name('sales-order.copy-quotation');
+
+    Route::resource('work-order', WorkOrderController::class)
+        ->only(['index', 'show'])
+        ->parameters(['work-order' => 'workOrder']);
+
+    Route::resource('stock-transfer', StockOrderTransferController::class)
+        ->only(['index', 'show'])
+        ->parameters(['stock-transfer' => 'stockTransfer']);
+
+    Route::resource('invoice', InvoiceController::class)->only(['index', 'show']);
+
+    Route::resource('proforma', ProformaController::class)->only(['index', 'show']);
+
+    Route::resource('delivery-order', DeliveryOrderController::class)
+        ->only(['index', 'show'])
+        ->parameters(['delivery-order' => 'deliveryOrder']);
+
+    Route::resource('coc', CocController::class)->only(['index', 'show']);
+
+    Route::resource('packing-list', PackingListController::class)
+        ->only(['index', 'show'])
+        ->parameters(['packing-list' => 'packingList']);
+
+    Route::resource('afe', AfeController::class)
+        ->only(['index', 'create', 'store', 'show', 'edit', 'update']);
+
+    Route::resource('afe.line', AfeLineController::class)
+        ->only(['store', 'update', 'destroy']);
+    Route::post('afe/{afe}/approve', [AfeController::class, 'approve'])
+        ->name('afe.approve');
+
+    Route::resource('afe-workflow', AfeApprovalFlowController::class)
+        ->only(['index', 'store', 'update', 'destroy'])
+        ->parameters(['afe-workflow' => 'afeWorkflow']);
+
+    Route::get('receiving-note/create/{afe}', [ReceivingNoteController::class, 'create'])
+        ->name('receiving-note.create');
+
+    Route::resource('receiving-note', ReceivingNoteController::class)
+        ->only(['index', 'store', 'show'])
+        ->parameters(['receiving-note' => 'receivingNote']);
 
     Route::resource('supplier', SupplierController::class)
         ->only(['index', 'store', 'update', 'destroy']);

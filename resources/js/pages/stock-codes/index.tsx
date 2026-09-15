@@ -58,7 +58,7 @@ export default function StockCodesIndex({
                 helper.accessor('description', {
                     header: 'Description',
                     cell: ({ getValue }) => (
-                        <span className="line-clamp-2 max-w-prose">
+                        <span className="block max-w-[32rem] truncate">
                             {getValue()}
                         </span>
                     ),

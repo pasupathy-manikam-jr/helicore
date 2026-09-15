@@ -34,6 +34,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import type { DataTableFeatures } from '@/lib/data-table';
+import { cn } from '@/lib/utils';
 
 type Props<TData extends RowData> = {
     table: ReactTable<DataTableFeatures, TData>;
@@ -49,6 +50,44 @@ type Props<TData extends RowData> = {
     totalRows?: number;
 };
 
+/**
+ * Columns that hold buttons rather than data. They are pinned to the right
+ * edge, so they stay put when a wide table scrolls sideways, and they shrink
+ * to a button's width so the data columns share out the rest.
+ */
+const FIXED_COLUMNS = new Set(['actions', 'oc', 'view', 'edit', 'rn']);
+
+/** Width of one pinned column, wide enough for an icon button. */
+const FIXED_COLUMN_WIDTH = 52;
+
+const fixedColumnClass =
+    'sticky z-20 w-[52px] px-2 text-center whitespace-nowrap';
+
+/**
+ * A border on a sticky cell is dropped once the table border-collapses, so the
+ * line marking where the pinned block starts is drawn as an inset shadow.
+ */
+const pinnedDivider = 'shadow-[inset_1px_0_0_0_var(--color-border)]';
+
+/** Keeps the column names in place while the rows scroll under them. */
+const stickyHeader =
+    'sticky top-0 z-30 shadow-[inset_0_-1px_0_0_var(--color-border)]';
+
+/** Where a pinned column meets the sticky header, both lines are needed. */
+const stickyPinnedHeader =
+    'sticky top-0 z-40 shadow-[inset_1px_0_0_0_var(--color-border),inset_0_-1px_0_0_var(--color-border)]';
+
+/**
+ * Pinned cells have to be opaque, or the data scrolling underneath shows
+ * through. These match the header row's own tint and a lighter one for the
+ * rows, mixed against the page rather than layered with an alpha.
+ */
+const pinnedHeaderBackground =
+    'bg-[color-mix(in_oklab,var(--color-muted)_70%,var(--color-background))]';
+
+const pinnedCellBackground =
+    'bg-[color-mix(in_oklab,var(--color-muted)_45%,var(--color-background))]';
+
 const PAGE_SIZES = [10, 25, 50, 100];
 
 export function DataTable<TData extends RowData>({
@@ -61,6 +100,27 @@ export function DataTable<TData extends RowData>({
     const { globalFilter, pagination } = table.state;
     const rows = table.getRowModel().rows;
     const count = totalRows ?? table.getFilteredRowModel().rows.length;
+
+    // Pinned columns stack from the right edge, so each one sits clear of the
+    // ones after it.
+    const pinnedIds = table
+        .getVisibleLeafColumns()
+        .map((column) => column.id)
+        .filter((id) => FIXED_COLUMNS.has(id));
+
+    const pinnedStyle = (id: string) => {
+        const position = pinnedIds.indexOf(id);
+
+        if (position === -1) {
+            return undefined;
+        }
+
+        return {
+            right: (pinnedIds.length - 1 - position) * FIXED_COLUMN_WIDTH,
+        };
+    };
+
+    const isFirstPinned = (id: string) => pinnedIds[0] === id;
 
     return (
         <div className="flex flex-col gap-4">
@@ -105,7 +165,7 @@ export function DataTable<TData extends RowData>({
             </div>
 
             <div className="rounded-xl border">
-                <Table>
+                <Table containerClassName="max-h-[70vh] overflow-auto rounded-xl">
                     <TableHeader>
                         {table.getHeaderGroups().map((group) => (
                             <TableRow key={group.id}>
@@ -115,7 +175,30 @@ export function DataTable<TData extends RowData>({
                                         : false;
 
                                     return (
-                                        <TableHead key={header.id}>
+                                        <TableHead
+                                            key={header.id}
+                                            style={pinnedStyle(
+                                                header.column.id,
+                                            )}
+                                            className={
+                                                FIXED_COLUMNS.has(
+                                                    header.column.id,
+                                                )
+                                                    ? cn(
+                                                          fixedColumnClass,
+                                                          pinnedHeaderBackground,
+                                                          isFirstPinned(
+                                                              header.column.id,
+                                                          )
+                                                              ? stickyPinnedHeader
+                                                              : stickyHeader,
+                                                      )
+                                                    : cn(
+                                                          stickyHeader,
+                                                          pinnedHeaderBackground,
+                                                      )
+                                            }
+                                        >
                                             {header.isPlaceholder ? null : header.column.getCanSort() ? (
                                                 <button
                                                     type="button"
@@ -160,7 +243,21 @@ export function DataTable<TData extends RowData>({
                         {rows.map((row) => (
                             <TableRow key={row.id}>
                                 {row.getVisibleCells().map((cell) => (
-                                    <TableCell key={cell.id}>
+                                    <TableCell
+                                        key={cell.id}
+                                        style={pinnedStyle(cell.column.id)}
+                                        className={
+                                            FIXED_COLUMNS.has(cell.column.id)
+                                                ? cn(
+                                                      fixedColumnClass,
+                                                      pinnedCellBackground,
+                                                      isFirstPinned(
+                                                          cell.column.id,
+                                                      ) && pinnedDivider,
+                                                  )
+                                                : 'whitespace-nowrap'
+                                        }
+                                    >
                                         <table.FlexRender cell={cell} />
                                     </TableCell>
                                 ))}

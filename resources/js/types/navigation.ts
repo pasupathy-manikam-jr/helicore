@@ -13,8 +13,16 @@ export type NavItem = {
     isActive?: boolean;
 };
 
+/** A labelled set of links nested inside a menu group. */
+export type NavSection = {
+    title: string;
+    items: NavItem[];
+};
+
+export type NavEntry = NavItem | NavSection;
+
 export type NavGroup = {
     title: string;
     icon?: LucideIcon | null;
-    items: NavItem[];
+    items: NavEntry[];
 };

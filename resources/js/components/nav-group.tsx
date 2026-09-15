@@ -16,6 +16,7 @@ import {
     SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
+import { isNavSection, navGroupLinks } from '@/lib/navigation';
 import type { NavGroup } from '@/types';
 
 export function NavGroups({
@@ -32,7 +33,7 @@ export function NavGroups({
             <SidebarGroupLabel>{label}</SidebarGroupLabel>
             <SidebarMenu>
                 {groups.map((group) => {
-                    const hasActiveChild = group.items.some((item) =>
+                    const hasActiveChild = navGroupLinks(group).some((item) =>
                         isCurrentUrl(item.href),
                     );
 
@@ -56,27 +57,36 @@ export function NavGroups({
 
                                 <CollapsibleContent>
                                     <SidebarMenuSub>
-                                        {group.items.map((item) => (
-                                            <SidebarMenuSubItem
-                                                key={item.title}
-                                            >
-                                                <SidebarMenuSubButton
-                                                    asChild
-                                                    isActive={isCurrentUrl(
-                                                        item.href,
-                                                    )}
+                                        {/* The sidebar is already one level
+                                            deep, so a section's links are
+                                            listed flat. */}
+                                        {group.items
+                                            .flatMap((entry) =>
+                                                isNavSection(entry)
+                                                    ? entry.items
+                                                    : [entry],
+                                            )
+                                            .map((item) => (
+                                                <SidebarMenuSubItem
+                                                    key={item.title}
                                                 >
-                                                    <Link
-                                                        href={item.href}
-                                                        prefetch
+                                                    <SidebarMenuSubButton
+                                                        asChild
+                                                        isActive={isCurrentUrl(
+                                                            item.href,
+                                                        )}
                                                     >
-                                                        <span>
-                                                            {item.title}
-                                                        </span>
-                                                    </Link>
-                                                </SidebarMenuSubButton>
-                                            </SidebarMenuSubItem>
-                                        ))}
+                                                        <Link
+                                                            href={item.href}
+                                                            prefetch
+                                                        >
+                                                            <span>
+                                                                {item.title}
+                                                            </span>
+                                                        </Link>
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                            ))}
                                     </SidebarMenuSub>
                                 </CollapsibleContent>
                             </SidebarMenuItem>

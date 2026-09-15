@@ -9,16 +9,16 @@ database.
 
 ## Modules
 
-| Module | State |
-| --- | --- |
-| Dashboard | Ported |
-| Suppliers, supplier categories | Ported |
-| Clients, delivery addresses | Ported |
-| Products (stock codes) | Ported |
-| Quotations | List, detail, header and line items |
-| Utilities (currency, tariff, shipping mode, tax, terms) | Ported |
-| Admin (users, roles, permissions) | Ported |
-| Sales order, work order, delivery order, invoice, AFE, reports | To do |
+| Module                                                         | State                               |
+| -------------------------------------------------------------- | ----------------------------------- |
+| Dashboard                                                      | Ported                              |
+| Suppliers, supplier categories                                 | Ported                              |
+| Clients, delivery addresses                                    | Ported                              |
+| Products (stock codes)                                         | Ported                              |
+| Quotations                                                     | List, detail, header and line items |
+| Utilities (currency, tariff, shipping mode, tax, terms)        | Ported                              |
+| Admin (users, roles, permissions)                              | Ported                              |
+| Sales order, work order, delivery order, invoice, AFE, reports | To do                               |
 
 ## Stack
 

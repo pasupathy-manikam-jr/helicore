@@ -42,7 +42,7 @@ export default function DeliveryAddressesIndex({
                     header: 'Address',
                     cell: ({ row }) => (
                         <>
-                            <span className="line-clamp-2">
+                            <span className="block max-w-[24rem] truncate">
                                 {row.original.address}
                             </span>
                             <div className="text-muted-foreground text-xs">

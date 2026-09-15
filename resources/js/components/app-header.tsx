@@ -30,15 +30,41 @@ import { UserMenuContent } from '@/components/user-menu-content';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
-import { mainNavItems, navGroups } from '@/lib/navigation';
+import {
+    isNavSection,
+    mainNavItems,
+    navGroupLinks,
+    navGroups,
+} from '@/lib/navigation';
 import { dashboard } from '@/routes';
-import type { BreadcrumbItem } from '@/types';
+import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {
     breadcrumbs?: BreadcrumbItem[];
 };
 
 const activeItemStyles = 'bg-accent text-accent-foreground';
+
+function MenuLink({ item }: { item: NavItem }) {
+    const { whenCurrentUrl } = useCurrentUrl();
+
+    return (
+        <NavigationMenuLink asChild>
+            <Link
+                href={item.href}
+                className={cn(
+                    'block rounded-md px-2 py-1.5 text-sm',
+                    whenCurrentUrl(
+                        item.href,
+                        'bg-accent text-accent-foreground font-medium',
+                    ),
+                )}
+            >
+                {item.title}
+            </Link>
+        </NavigationMenuLink>
+    );
+}
 
 export function AppHeader({ breadcrumbs = [] }: Props) {
     const page = usePage();
@@ -101,21 +127,53 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                 {group.title}
                                             </div>
 
-                                            {group.items.map((item) => (
-                                                <Link
-                                                    key={item.title}
-                                                    href={item.href}
-                                                    className={cn(
-                                                        'pl-6 font-medium',
-                                                        whenCurrentUrl(
-                                                            item.href,
-                                                            'text-primary',
-                                                        ),
-                                                    )}
-                                                >
-                                                    {item.title}
-                                                </Link>
-                                            ))}
+                                            {group.items.map((entry) =>
+                                                isNavSection(entry) ? (
+                                                    <div
+                                                        key={entry.title}
+                                                        className="flex flex-col gap-3"
+                                                    >
+                                                        <div className="text-muted-foreground pl-6 text-xs font-medium">
+                                                            {entry.title}
+                                                        </div>
+                                                        {entry.items.map(
+                                                            (item) => (
+                                                                <Link
+                                                                    key={
+                                                                        item.title
+                                                                    }
+                                                                    href={
+                                                                        item.href
+                                                                    }
+                                                                    className={cn(
+                                                                        'pl-10 font-medium',
+                                                                        whenCurrentUrl(
+                                                                            item.href,
+                                                                            'text-primary',
+                                                                        ),
+                                                                    )}
+                                                                >
+                                                                    {item.title}
+                                                                </Link>
+                                                            ),
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <Link
+                                                        key={entry.title}
+                                                        href={entry.href}
+                                                        className={cn(
+                                                            'pl-6 font-medium',
+                                                            whenCurrentUrl(
+                                                                entry.href,
+                                                                'text-primary',
+                                                            ),
+                                                        )}
+                                                    >
+                                                        {entry.title}
+                                                    </Link>
+                                                ),
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -131,104 +189,32 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         <AppLogo />
                     </Link>
 
-                    {/* Desktop navigation */}
-                    <div className="ml-6 hidden h-full items-center lg:flex">
-                        <NavigationMenu
-                            viewport={false}
-                            className="flex h-full items-stretch"
-                        >
-                            <NavigationMenuList className="flex h-full items-stretch space-x-1">
-                                {mainNavItems.map((item) => (
-                                    <NavigationMenuItem
-                                        key={item.title}
-                                        className="relative flex h-full items-center"
-                                    >
-                                        <NavigationMenuLink asChild>
-                                            <Link
-                                                href={item.href}
-                                                className={cn(
-                                                    navigationMenuTriggerStyle(),
-                                                    whenCurrentUrl(
-                                                        item.href,
-                                                        activeItemStyles,
-                                                    ),
-                                                    'h-9 cursor-pointer px-3',
-                                                )}
-                                            >
-                                                {item.icon && (
-                                                    <item.icon className="mr-2 h-4 w-4" />
-                                                )}
-                                                {item.title}
-                                            </Link>
-                                        </NavigationMenuLink>
-
-                                        {isCurrentUrl(item.href) && (
-                                            <div className="bg-primary absolute bottom-0 left-0 h-0.5 w-full translate-y-px" />
-                                        )}
-                                    </NavigationMenuItem>
-                                ))}
-
-                                {navGroups.map((group) => {
-                                    const hasActiveChild = group.items.some(
-                                        (item) => isCurrentUrl(item.href),
-                                    );
-
-                                    return (
-                                        <NavigationMenuItem
-                                            key={group.title}
-                                            className="relative flex h-full items-center"
-                                        >
-                                            <NavigationMenuTrigger
-                                                className={cn(
-                                                    'h-9 cursor-pointer px-3',
-                                                    hasActiveChild &&
-                                                        activeItemStyles,
-                                                )}
-                                            >
-                                                {group.icon && (
-                                                    <group.icon className="mr-2 h-4 w-4" />
-                                                )}
-                                                {group.title}
-                                            </NavigationMenuTrigger>
-
-                                            <NavigationMenuContent>
-                                                <ul className="grid w-56 gap-1 p-2">
-                                                    {group.items.map((item) => (
-                                                        <li key={item.title}>
-                                                            <NavigationMenuLink
-                                                                asChild
-                                                            >
-                                                                <Link
-                                                                    href={
-                                                                        item.href
-                                                                    }
-                                                                    className={cn(
-                                                                        'block rounded-md px-2 py-1.5 text-sm',
-                                                                        whenCurrentUrl(
-                                                                            item.href,
-                                                                            'bg-accent text-accent-foreground font-medium',
-                                                                        ),
-                                                                    )}
-                                                                >
-                                                                    {item.title}
-                                                                </Link>
-                                                            </NavigationMenuLink>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </NavigationMenuContent>
-
-                                            {hasActiveChild && (
-                                                <div className="bg-primary absolute bottom-0 left-0 h-0.5 w-full translate-y-px" />
-                                            )}
-                                        </NavigationMenuItem>
-                                    );
-                                })}
-                            </NavigationMenuList>
-                        </NavigationMenu>
-                    </div>
-
                     <div className="ml-auto flex items-center space-x-2">
+                        {/* Dashboard sits beside the profile menu, as it does
+                            in the application this replaces. */}
+                        <nav className="hidden items-center gap-1 lg:flex">
+                            {mainNavItems.map((item) => (
+                                <Link
+                                    key={item.title}
+                                    href={item.href}
+                                    prefetch
+                                    className={cn(
+                                        navigationMenuTriggerStyle(),
+                                        'h-9 cursor-pointer bg-transparent px-3',
+                                        whenCurrentUrl(
+                                            item.href,
+                                            activeItemStyles,
+                                        ),
+                                    )}
+                                >
+                                    {item.icon && (
+                                        <item.icon className="mr-2 h-4 w-4" />
+                                    )}
+                                    {item.title}
+                                </Link>
+                            ))}
+                        </nav>
+
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
@@ -253,6 +239,86 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
+                </div>
+            </div>
+
+            {/* The menu sits in its own bar under the header, as it does in
+                the application this replaces. */}
+            <div className="border-border relative z-40 hidden border-b lg:block">
+                <div className="mx-auto flex h-12 items-stretch px-4 md:max-w-7xl">
+                    <NavigationMenu
+                        viewport={false}
+                        className="flex h-full items-stretch"
+                    >
+                        <NavigationMenuList className="flex h-full items-stretch space-x-1">
+                            {navGroups.map((group) => {
+                                const hasActiveChild = navGroupLinks(
+                                    group,
+                                ).some((item) => isCurrentUrl(item.href));
+
+                                return (
+                                    <NavigationMenuItem
+                                        key={group.title}
+                                        className="relative flex h-full items-center"
+                                    >
+                                        <NavigationMenuTrigger
+                                            className={cn(
+                                                'h-9 cursor-pointer px-3',
+                                                hasActiveChild &&
+                                                    activeItemStyles,
+                                            )}
+                                        >
+                                            {group.icon && (
+                                                <group.icon className="mr-2 h-4 w-4" />
+                                            )}
+                                            {group.title}
+                                        </NavigationMenuTrigger>
+
+                                        <NavigationMenuContent>
+                                            <ul className="grid w-56 gap-1 p-2">
+                                                {group.items.map((entry) =>
+                                                    isNavSection(entry) ? (
+                                                        <li key={entry.title}>
+                                                            <div className="text-muted-foreground px-2 py-1.5 text-xs font-medium tracking-wide uppercase">
+                                                                {entry.title}
+                                                            </div>
+                                                            <ul className="border-border ml-2 grid gap-1 border-l pl-2">
+                                                                {entry.items.map(
+                                                                    (item) => (
+                                                                        <li
+                                                                            key={
+                                                                                item.title
+                                                                            }
+                                                                        >
+                                                                            <MenuLink
+                                                                                item={
+                                                                                    item
+                                                                                }
+                                                                            />
+                                                                        </li>
+                                                                    ),
+                                                                )}
+                                                            </ul>
+                                                        </li>
+                                                    ) : (
+                                                        <li key={entry.title}>
+                                                            <MenuLink
+                                                                item={entry}
+                                                            />
+                                                        </li>
+                                                    ),
+                                                )}
+                                            </ul>
+                                        </NavigationMenuContent>
+
+                                        {hasActiveChild && (
+                                            <div className="bg-primary absolute bottom-0 left-0 h-0.5 w-full translate-y-px" />
+                                        )}
+                                    </NavigationMenuItem>
+                                );
+                            })}
+                        </NavigationMenuList>
+                    </NavigationMenu>
                 </div>
             </div>
 

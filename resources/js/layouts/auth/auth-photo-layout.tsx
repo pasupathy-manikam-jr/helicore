@@ -56,8 +56,7 @@ export default function AuthPhotoLayout({
                         to ASME B16.20 and API 6A.
                     </p>
                     <p className="mt-3 text-sm text-white/70">
-                        Sendayan Merchant Square, Labu, Seremban &middot; Pasir
-                        Gudang
+                        Sendayan Merchant Square, Labu, Seremban
                     </p>
                 </div>
             </div>

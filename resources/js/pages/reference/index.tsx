@@ -35,7 +35,7 @@ export default function ReferenceIndex({ resource, fields, rows, can }: Props) {
 
                             if (field.type === 'textarea') {
                                 return (
-                                    <span className="text-muted-foreground line-clamp-2 block max-w-prose text-xs whitespace-pre-line">
+                                    <span className="text-muted-foreground block max-w-[32rem] truncate text-xs">
                                         {String(value ?? '')}
                                     </span>
                                 );

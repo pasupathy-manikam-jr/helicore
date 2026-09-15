@@ -34,9 +34,38 @@ class DashboardTest extends TestCase
                     $blueprint->string('your_ref')->nullable();
                     $blueprint->string('attnto')->nullable();
                     $blueprint->string('client_buyer_name')->nullable();
+                    $blueprint->integer('company_details_id')->nullable();
+                    $blueprint->string('currency', 10)->nullable();
+                    $blueprint->integer('sst')->nullable();
+                    $blueprint->decimal('packcost', 10, 2)->nullable();
+                    $blueprint->decimal('custom', 10, 2)->nullable();
+                    $blueprint->decimal('miscvalue', 10, 2)->nullable();
+                    $blueprint->string('freight', 30)->nullable();
+                    $blueprint->decimal('discount', 10, 2)->nullable();
                 }
             });
         }
+
+        Schema::create('quote_descs', function (Blueprint $table) {
+            $table->increments('id');
+            $table->integer('our_ref')->nullable();
+            $table->integer('item')->nullable();
+            $table->integer('qty')->nullable();
+            $table->decimal('price', 10, 2)->nullable();
+            $table->decimal('total', 10, 2)->nullable();
+            $table->decimal('sst', 10, 2)->nullable();
+            $table->float('weight')->nullable();
+        });
+
+        Schema::create('company_details', function (Blueprint $table) {
+            $table->increments('id');
+            $table->string('cname')->nullable();
+        });
+
+        Schema::create('currency', function (Blueprint $table) {
+            $table->increments('id');
+            $table->string('name')->nullable();
+        });
     }
 
     public function test_guests_are_redirected_to_the_login_page()
@@ -74,5 +103,44 @@ class DashboardTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get(route('dashboard'))
             ->assertInertia(fn ($page) => $page->where('pendingAfes', 2));
+    }
+
+    public function test_the_latest_quotations_carry_the_client_and_what_they_come_to()
+    {
+        $clientId = DB::table('company_details')->insertGetId(['cname' => 'Acme Energy']);
+        $currencyId = DB::table('currency')->insertGetId(['name' => 'USD']);
+
+        $older = DB::table('quote_refs')->insertGetId([
+            'your_ref' => 'PO-1',
+            'company_details_id' => $clientId,
+            'currency' => (string) $currencyId,
+            'discount' => 0,
+            'created_at' => now()->subDay(),
+        ]);
+        $newest = DB::table('quote_refs')->insertGetId([
+            'your_ref' => 'PO-2',
+            'attnto' => 'Sam',
+            'company_details_id' => $clientId,
+            'currency' => (string) $currencyId,
+            'discount' => 10,
+            'created_at' => now(),
+        ]);
+
+        DB::table('quote_descs')->insert([
+            ['our_ref' => $older, 'qty' => 1, 'price' => 50],
+            ['our_ref' => $newest, 'qty' => 2, 'price' => 500],
+        ]);
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('recentQuotations.0.id', $newest)
+                ->where('recentQuotations.0.client', 'Acme Energy')
+                ->where('recentQuotations.0.currency', 'USD')
+                // 2 x 500, less the 10% discount.
+                ->where('recentQuotations.0.value', 900)
+                ->where('recentQuotations.1.id', $older)
+            );
     }
 }
