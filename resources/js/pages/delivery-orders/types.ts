@@ -48,3 +48,22 @@ export type DeliveryOrderTotals = {
     weight: number;
     value: number;
 };
+
+export type SalesOrderForDespatch = {
+    id: number;
+    customer_order: string | null;
+    contact_person: string | null;
+    client: string | null;
+};
+
+export type DespatchableLine = {
+    id: number;
+    item: number | null;
+    product: string | null;
+    stock_code: string | null;
+    description: string | null;
+    quantity: number | null;
+    unit: string | null;
+    /** How much of this line earlier despatches already sent. */
+    already_sent: number;
+};

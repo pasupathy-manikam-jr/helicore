@@ -69,7 +69,11 @@ class ReceivingNoteController extends Controller implements HasMiddleware
         $alreadyReceived = ReceivingNoteLine::query()
             ->where('afe_id', $afe->id)
             ->groupBy('afe_descs_id')
-            ->pluck(DB::raw('sum(qty_delivered)'), 'afe_descs_id');
+            ->selectRaw('afe_descs_id, sum(qty_delivered) as received')
+            ->get()
+            ->mapWithKeys(fn (ReceivingNoteLine $line) => [
+                (int) $line->afe_descs_id => (float) $line->received,
+            ]);
 
         return Inertia::render('receiving-notes/form', [
             'afe' => [

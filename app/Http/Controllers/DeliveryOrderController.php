@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\DeliveryOrderRequest;
 use App\Models\DeliveryOrder;
 use App\Models\DeliveryOrderLine;
+use App\Models\SalesOrder;
+use App\Models\SalesOrderLine;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -21,6 +25,7 @@ class DeliveryOrderController extends Controller implements HasMiddleware
         return [
             'auth',
             new Middleware('permission:do-list', only: ['index', 'show']),
+            new Middleware('permission:do-create', only: ['create', 'store']),
         ];
     }
 
@@ -50,8 +55,104 @@ class DeliveryOrderController extends Controller implements HasMiddleware
 
         return Inertia::render('delivery-orders/index', [
             'orders' => $orders,
-            'can' => ['edit' => $request->user()->can('do-edit')],
+            'can' => [
+                'edit' => $request->user()->can('do-edit'),
+                'create' => $request->user()->can('do-create'),
+            ],
         ]);
+    }
+
+    /**
+     * A despatch is raised against a sales order, so the form starts from that
+     * order's lines and what earlier despatches already sent out.
+     */
+    public function create(SalesOrder $salesOrder): Response
+    {
+        $salesOrder->load(['lines', 'client:id,cname']);
+
+        return Inertia::render('delivery-orders/form', [
+            'order' => [
+                ...$salesOrder->only(['id', 'customer_order', 'contact_person']),
+                'client' => $salesOrder->client?->cname,
+            ],
+            'lines' => $salesOrder->lines->map(fn (SalesOrderLine $line) => [
+                ...$line->only(['id', 'item', 'product', 'stock_code', 'description', 'quantity', 'unit']),
+                'already_sent' => $this->alreadySent($salesOrder)[$line->item] ?? 0,
+            ]),
+        ]);
+    }
+
+    public function store(DeliveryOrderRequest $request): RedirectResponse
+    {
+        $quantities = $request->despatchedQuantities();
+
+        if ($quantities === []) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => 'Enter a quantity against at least one line.',
+            ]);
+
+            return back();
+        }
+
+        $salesOrder = SalesOrder::with('lines')->findOrFail($request->validated('salesorder'));
+        $lines = $salesOrder->lines->whereIn('id', array_keys($quantities));
+
+        $deliveryOrder = DB::transaction(function () use ($request, $salesOrder, $lines, $quantities) {
+            $deliveryOrder = DeliveryOrder::create([
+                'type' => 'salesorder',
+                'salesorder' => $salesOrder->id,
+                'customer_order' => $request->validated('customer_order') ?? $salesOrder->customer_order,
+                // Both counts are of lines, as the legacy screen records them.
+                'total_fsd_items' => $salesOrder->lines->count(),
+                'delivered_fsd_items' => $lines->count(),
+                'status' => 'valid',
+            ]);
+
+            foreach ($lines as $line) {
+                $deliveryOrder->lines()->create([
+                    'item' => $line->item,
+                    'poitem' => $line->polineitem,
+                    'quantity' => $quantities[$line->id],
+                    'actual_qty' => $quantities[$line->id],
+                    'product' => $line->product,
+                    'description' => $line->description,
+                    'postock_code' => $line->postock_code,
+                    'stockcode' => $line->stock_code,
+                    'std_stockcode' => $line->std_stockcode,
+                    'unit_price' => $line->unit_price,
+                    'weight' => $line->weight,
+                    'sst' => $line->sst ?? 0,
+                ]);
+            }
+
+            return $deliveryOrder;
+        });
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Delivery order created.']);
+
+        return to_route('delivery-order.show', $deliveryOrder);
+    }
+
+    /**
+     * How much of each sales order line earlier despatches already sent, by
+     * item number: that is what a despatch line records, not the line id.
+     *
+     * @return array<int, int>
+     */
+    private function alreadySent(SalesOrder $salesOrder): array
+    {
+        return DB::table('loading_note_content')
+            ->join('loading_note', 'loading_note.id', '=', 'loading_note_content.do_id')
+            ->where('loading_note.type', 'salesorder')
+            ->where('loading_note.salesorder', $salesOrder->id)
+            ->where(fn ($query) => $query->where('loading_note.status', '!=', 'invalid')
+                ->orWhereNull('loading_note.status'))
+            ->groupBy('loading_note_content.item')
+            ->selectRaw('loading_note_content.item as item, sum(loading_note_content.actual_qty) as sent')
+            ->get()
+            ->mapWithKeys(fn ($row) => [(int) $row->item => (int) $row->sent])
+            ->all();
     }
 
     public function show(DeliveryOrder $deliveryOrder): Response

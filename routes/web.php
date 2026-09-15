@@ -84,8 +84,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('proforma', ProformaController::class)->only(['index', 'show']);
 
+    Route::get('delivery-order/create/{salesOrder}', [DeliveryOrderController::class, 'create'])
+        ->name('delivery-order.create');
+
     Route::resource('delivery-order', DeliveryOrderController::class)
-        ->only(['index', 'show'])
+        ->only(['index', 'store', 'show'])
         ->parameters(['delivery-order' => 'deliveryOrder']);
 
     Route::resource('coc', CocController::class)->only(['index', 'show']);

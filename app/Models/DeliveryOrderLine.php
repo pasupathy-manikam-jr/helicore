@@ -2,9 +2,25 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[Fillable([
+    'do_id',
+    'item',
+    'poitem',
+    'quantity',
+    'actual_qty',
+    'product',
+    'description',
+    'postock_code',
+    'stockcode',
+    'std_stockcode',
+    'unit_price',
+    'weight',
+    'sst',
+])]
 class DeliveryOrderLine extends Model
 {
     protected $table = 'loading_note_content';

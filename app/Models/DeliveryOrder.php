@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,6 +11,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * A despatch against a sales order, work order or stock order transfer. The
  * legacy table is called loading_note; the screens call it a delivery order.
  */
+#[Fillable([
+    'type',
+    'salesorder',
+    'customer_order',
+    'total_fsd_items',
+    'delivered_fsd_items',
+    'status',
+])]
 class DeliveryOrder extends Model
 {
     protected $table = 'loading_note';

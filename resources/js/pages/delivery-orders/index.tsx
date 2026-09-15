@@ -10,12 +10,13 @@ import {
 } from '@/lib/data-table';
 import { formatDate } from '@/lib/format';
 import { index, show } from '@/routes/delivery-order';
-import { Eye } from 'lucide-react';
+import { Eye, Plus } from 'lucide-react';
+import PickSalesOrderDialog from './pick-sales-order-dialog';
 import type { DeliveryOrderRow } from './types';
 
 type Props = {
     orders: DeliveryOrderRow[];
-    can: { edit: boolean };
+    can: { edit: boolean; create: boolean };
 };
 
 const helper = createAppColumnHelper<DeliveryOrderRow>();
@@ -26,7 +27,7 @@ const SOURCE_LABELS: Record<string, string> = {
     stockordertransfer: 'Stock transfer',
 };
 
-export default function DeliveryOrdersIndex({ orders }: Props) {
+export default function DeliveryOrdersIndex({ orders, can }: Props) {
     const columns = useMemo(
         () =>
             helper.columns([
@@ -127,6 +128,17 @@ export default function DeliveryOrdersIndex({ orders }: Props) {
                     table={table}
                     searchPlaceholder="Search DO no., client, customer order…"
                     emptyMessage="No delivery orders found."
+                    toolbar={
+                        can.create && (
+                            <PickSalesOrderDialog
+                                trigger={
+                                    <Button>
+                                        <Plus /> New delivery order
+                                    </Button>
+                                }
+                            />
+                        )
+                    }
                 />
             </div>
         </>

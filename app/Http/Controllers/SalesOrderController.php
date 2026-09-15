@@ -192,6 +192,7 @@ class SalesOrderController extends Controller implements HasMiddleware
             'can' => [
                 'edit' => $request->user()->can('salesorder-edit'),
                 'deleteLine' => $request->user()->can('salesorder-delete'),
+                'despatch' => $request->user()->can('do-create'),
             ],
         ]);
     }

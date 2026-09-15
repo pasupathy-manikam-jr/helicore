@@ -9,8 +9,16 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { create as despatchCreate } from '@/routes/delivery-order';
 import { confirmation, edit, index, show } from '@/routes/sales-order';
-import { ArrowLeft, ClipboardCopy, FileText, Pencil, Plus } from 'lucide-react';
+import {
+    ArrowLeft,
+    ClipboardCopy,
+    FileText,
+    Pencil,
+    Plus,
+    Truck,
+} from 'lucide-react';
 import SalesOrderLineController from '@/actions/App/Http/Controllers/SalesOrderLineController';
 import ConfirmDelete from '@/components/confirm-delete';
 import CopyQuotationDialog from './copy-quotation-dialog';
@@ -21,7 +29,7 @@ type Props = {
     order: SalesOrder;
     lines: SalesOrderLine[];
     totals: SalesOrderTotals;
-    can: { edit: boolean; deleteLine: boolean };
+    can: { edit: boolean; deleteLine: boolean; despatch: boolean };
 };
 
 const money = new Intl.NumberFormat('en-MY', {
@@ -85,6 +93,14 @@ export default function SalesOrderShow({ order, lines, totals, can }: Props) {
                                 <FileText /> Order confirmation
                             </Link>
                         </Button>
+
+                        {can.despatch && (
+                            <Button variant="outline" asChild>
+                                <Link href={despatchCreate(order.id)}>
+                                    <Truck /> Despatch
+                                </Link>
+                            </Button>
+                        )}
 
                         {can.edit && (
                             <Button asChild>
