@@ -77,6 +77,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Redirects
+    |--------------------------------------------------------------------------
+    |
+    | Fortify sends a logged out user to "/" by default, which then bounces
+    | through the dashboard and back to the login page. Naming the login page
+    | outright keeps it to a single redirect, which matters because a chain of
+    | them loses the Inertia headers and leaves the browser where it was.
+    |
+    */
+
+    'redirects' => [
+        'logout' => '/login',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Fortify Routes Prefix / Subdomain
     |--------------------------------------------------------------------------
     |

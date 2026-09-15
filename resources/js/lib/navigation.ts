@@ -1,5 +1,6 @@
 import {
     Building2,
+    ChartColumn,
     ClipboardList,
     FileText,
     LayoutGrid,
@@ -15,6 +16,7 @@ import {
     index as quotationIndex,
 } from '@/routes/quotation';
 import { index as clientDeliveryIndex } from '@/routes/client-delivery';
+import { stockSold } from '@/routes/report';
 import { index as cocIndex } from '@/routes/coc';
 import { index as deliveryOrderIndex } from '@/routes/delivery-order';
 import { index as packingListIndex } from '@/routes/packing-list';
@@ -157,6 +159,11 @@ export const navGroups: NavGroup[] = [
                 ],
             },
         ],
+    },
+    {
+        title: 'Reports',
+        icon: ChartColumn,
+        items: [{ title: 'Stock sold', href: stockSold() }],
     },
     {
         title: 'Utilities',

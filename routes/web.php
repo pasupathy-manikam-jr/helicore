@@ -22,6 +22,7 @@ use App\Http\Controllers\Reference\PermissionController;
 use App\Http\Controllers\Reference\TariffController;
 use App\Http\Controllers\Reference\TaxController;
 use App\Http\Controllers\Reference\TncController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SalesOrderController;
 use App\Http\Controllers\SalesOrderLineController;
 use App\Http\Controllers\StockCodeController;
@@ -104,6 +105,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('afe-workflow', AfeApprovalFlowController::class)
         ->only(['index', 'store', 'update', 'destroy'])
         ->parameters(['afe-workflow' => 'afeWorkflow']);
+
+    Route::get('report/stock-sold', [ReportController::class, 'stockSold'])
+        ->name('report.stock-sold');
 
     Route::get('receiving-note/create/{afe}', [ReceivingNoteController::class, 'create'])
         ->name('receiving-note.create');
