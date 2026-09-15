@@ -55,6 +55,9 @@ function SelectContent({
   side = "bottom",
   sideOffset = 4,
   align = "center",
+  // A select near the foot of the page has no room below it, so let the
+  // content flip above the trigger rather than open off screen.
+  avoidCollisions = true,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
   return (
@@ -70,7 +73,7 @@ function SelectContent({
         position={position}
         side={side}
         sideOffset={sideOffset}
-        avoidCollisions={false}
+        avoidCollisions={avoidCollisions}
         align={align}
         {...props}
       >
