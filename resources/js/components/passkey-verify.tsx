@@ -6,6 +6,8 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { dashboard } from '@/routes';
+import { login, loginOptions } from '@/routes/passkey';
 
 type Props = {
     routes?: {
@@ -23,15 +25,15 @@ export default function PasskeyVerify({
     loadingLabel,
     separator,
 }: Props = {}) {
+    // The package's own defaults are root relative, so they miss the path
+    // prefix the app is served under. Wayfinder's URLs carry it.
     const { verify, isLoading, error, isSupported } = usePasskeyVerify({
-        ...(routes && {
-            routes: {
-                options: routes.options.url,
-                submit: routes.submit.url,
-            },
-        }),
+        routes: {
+            options: (routes?.options ?? loginOptions()).url,
+            submit: (routes?.submit ?? login()).url,
+        },
         onSuccess: (response) => {
-            router.visit(response.redirect ?? '/dashboard');
+            router.visit(response.redirect ?? dashboard.url());
         },
     });
 

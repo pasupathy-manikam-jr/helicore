@@ -4,6 +4,7 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { registrationOptions, store } from '@/routes/passkey';
 
 type Props = {
     onSuccess: () => void;
@@ -33,7 +34,13 @@ export default function PasskeyRegistration({ onSuccess }: Props) {
     });
 
     const [showForm, setShowForm] = useState(false);
+    // The package's own defaults are root relative, so they miss the path
+    // prefix the app is served under. Wayfinder's URLs carry it.
     const { register, isLoading, error, isSupported } = usePasskeyRegister({
+        routes: {
+            options: registrationOptions().url,
+            submit: store().url,
+        },
         onSuccess: () => {
             setName('');
             setShowForm(false);
