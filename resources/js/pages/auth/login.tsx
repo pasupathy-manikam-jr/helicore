@@ -1,4 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
+import { useRef } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -11,12 +12,31 @@ import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 import PasskeyVerify from '@/components/passkey-verify';
 
+type DemoLogin = {
+    name: string;
+    role: string;
+    email: string;
+    password: string;
+};
+
 type Props = {
     status?: string;
     canResetPassword: boolean;
+    demoLogins: DemoLogin[];
 };
 
-export default function Login({ status, canResetPassword }: Props) {
+export default function Login({ status, canResetPassword, demoLogins }: Props) {
+    const emailRef = useRef<HTMLInputElement>(null);
+    const passwordRef = useRef<HTMLInputElement>(null);
+
+    // The form is uncontrolled, so fill the fields directly.
+    const fill = (login: DemoLogin) => {
+        if (emailRef.current && passwordRef.current) {
+            emailRef.current.value = login.email;
+            passwordRef.current.value = login.password;
+        }
+    };
+
     return (
         <>
             <Head title="Log in" />
@@ -31,9 +51,33 @@ export default function Login({ status, canResetPassword }: Props) {
                 {({ processing, errors }) => (
                     <>
                         <div className="grid gap-6">
+                            {demoLogins.length > 0 && (
+                                <div className="bg-muted/50 grid gap-2 rounded-lg border p-4">
+                                    <p className="text-sm font-medium">
+                                        Quick login
+                                    </p>
+                                    {demoLogins.map((login) => (
+                                        <button
+                                            key={login.email}
+                                            type="button"
+                                            onClick={() => fill(login)}
+                                            className="hover:bg-muted focus-visible:ring-ring flex items-center gap-3 rounded-md px-2 py-1 text-left text-sm focus-visible:ring-2 focus-visible:outline-none"
+                                        >
+                                            <span className="w-24 shrink-0 font-medium">
+                                                {login.role}
+                                            </span>
+                                            <span className="text-muted-foreground truncate">
+                                                {login.email}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
                             <div className="grid gap-2">
                                 <Label htmlFor="email">Email address</Label>
                                 <Input
+                                    ref={emailRef}
                                     id="email"
                                     type="text"
                                     inputMode="email"
@@ -60,6 +104,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     )}
                                 </div>
                                 <PasswordInput
+                                    ref={passwordRef}
                                     id="password"
                                     name="password"
                                     tabIndex={2}

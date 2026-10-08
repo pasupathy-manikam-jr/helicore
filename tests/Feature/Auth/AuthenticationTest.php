@@ -3,8 +3,10 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Providers\FortifyServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
+use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
 use Tests\TestCase;
 
@@ -17,6 +19,22 @@ class AuthenticationTest extends TestCase
         $response = $this->get(route('login'));
 
         $response->assertOk();
+    }
+
+    public function test_login_screen_hides_demo_logins_by_default()
+    {
+        config(['app.demo_logins' => false]);
+
+        $this->get(route('login'))->assertInertia(fn (Assert $page) => $page
+            ->where('demoLogins', []));
+    }
+
+    public function test_login_screen_offers_demo_logins_when_enabled()
+    {
+        config(['app.demo_logins' => true]);
+
+        $this->get(route('login'))->assertInertia(fn (Assert $page) => $page
+            ->where('demoLogins', FortifyServiceProvider::DEMO_LOGINS));
     }
 
     public function test_users_can_authenticate_using_the_login_screen()

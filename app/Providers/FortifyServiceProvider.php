@@ -17,6 +17,20 @@ use Laravel\Fortify\Fortify;
 class FortifyServiceProvider extends ServiceProvider
 {
     /**
+     * One account per role, offered on the login page when DEMO_LOGINS=true.
+     * The accounts are legacy users whose passwords were reset to this value.
+     *
+     * @var list<array{name: string, role: string, email: string, password: string}>
+     */
+    public const DEMO_LOGINS = [
+        ['name' => 'Thanuja Surendran', 'role' => 'Administrator', 'email' => 'thanuja.surendran@example.com', 'password' => 'Zx123456'],
+        ['name' => 'Nur Syahidatul binti Shmsul', 'role' => 'Sales', 'email' => 'nur.shmsul@example.com', 'password' => 'Zx123456'],
+        ['name' => 'Yap Geng Leu', 'role' => 'Manager', 'email' => 'yap.leu@example.com', 'password' => 'Zx123456'],
+        ['name' => 'M. G. G. Anita', 'role' => 'MD', 'email' => 'm.anita@example.com', 'password' => 'Zx123456'],
+        ['name' => 'Nazura binti Nasiman', 'role' => 'Production', 'email' => 'nazura.nasiman@example.com', 'password' => 'Zx123456'],
+    ];
+
+    /**
      * Register any application services.
      */
     public function register(): void
@@ -51,6 +65,7 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
             'status' => $request->session()->get('status'),
+            'demoLogins' => config('app.demo_logins') ? self::DEMO_LOGINS : [],
         ]));
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/reset-password', [
